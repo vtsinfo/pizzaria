@@ -7,8 +7,9 @@
 {% endblock %}
 
 {% block navbar_actions %}
-<button class="btn btn-outline-light btn-sm" onclick="openBannersModal()">🖼️ Banners</button>
+{% block navbar_actions %}
 <button class="btn btn-outline-warning btn-sm" onclick="openPasswordModal()">Minha Conta</button>
+{% endblock %}
 {% endblock %}
 
 {% block content %}
@@ -166,189 +167,155 @@
                                     (IA)</label>
                             </div>
                         </div>
-                        <div class="col-12">
-                            <hr>
-                            <h6 class="text-warning">🍽️ Sistema Self-Service</h6>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-center">
+                        <div class="w-100">
+                            <label class="form-label small mb-1">Voz da Assistente</label>
+                            <select id="confVoiceGender" class="form-select form-select-sm">
+                                <option value="female">👩‍🦰 Feminina</option>
+                                <option value="male">👨 Masculina</option>
+                            </select>
                         </div>
-                        <div class="col-md-6 d-flex align-items-center">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="confSelfServiceEnabled">
-                                <label class="form-check-label" for="confSelfServiceEnabled">Ativar Self-Service na
-                                    Home</label>
-                            </div>
+                    </div>
+                    <div class="col-12">
+                        <hr>
+                        <h6 class="text-warning">🍽️ Sistema Self-Service</h6>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-center">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="confSelfServiceEnabled">
+                            <label class="form-check-label" for="confSelfServiceEnabled">Ativar Self-Service na
+                                Home</label>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Dias e Horários (Ex: Seg a Sex, 11h às 15h)</label>
-                            <input type="text" id="confSelfServiceDays" class="form-control"
-                                placeholder="Descreva os dias e horários">
-                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Dias e Horários (Ex: Seg a Sex, 11h às 15h)</label>
+                        <input type="text" id="confSelfServiceDays" class="form-control"
+                            placeholder="Descreva os dias e horários">
+                    </div>
 
-                        <div class="col-12">
-                            <hr>
-                            <h6 class="text-warning">🍖 Rodízio de Carnes</h6>
+                    <div class="col-12">
+                        <hr>
+                        <h6 class="text-warning">🍖 Rodízio de Carnes</h6>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-center">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="confRodizioCarneEnabled">
+                            <label class="form-check-label" for="confRodizioCarneEnabled">Ativar Rodízio de
+                                Carnes</label>
                         </div>
-                        <div class="col-md-6 d-flex align-items-center">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="confRodizioCarneEnabled">
-                                <label class="form-check-label" for="confRodizioCarneEnabled">Ativar Rodízio de
-                                    Carnes</label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Dias e Horários</label>
-                            <input type="text" id="confRodizioCarneDays" class="form-control"
-                                placeholder="Ex: Sexta a Domingo, a partir das 18h">
-                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Dias e Horários</label>
+                        <input type="text" id="confRodizioCarneDays" class="form-control"
+                            placeholder="Ex: Sexta a Domingo, a partir das 18h">
+                    </div>
 
-                        <div class="col-12">
-                            <hr>
-                            <h6 class="text-warning">🍕 Rodízio de Pizza</h6>
+                    <div class="col-12">
+                        <hr>
+                        <h6 class="text-warning">🍕 Rodízio de Pizza</h6>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-center">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="confRodizioPizzaEnabled">
+                            <label class="form-check-label" for="confRodizioPizzaEnabled">Ativar Rodízio de
+                                Pizza</label>
                         </div>
-                        <div class="col-md-6 d-flex align-items-center">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="confRodizioPizzaEnabled">
-                                <label class="form-check-label" for="confRodizioPizzaEnabled">Ativar Rodízio de
-                                    Pizza</label>
-                            </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Dias e Horários</label>
+                        <input type="text" id="confRodizioPizzaDays" class="form-control"
+                            placeholder="Ex: Todos os dias">
+                    </div>
+
+                    <div class="col-12">
+                        <hr>
+                        <label class="form-label">Logotipo (Opcional)</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <img id="confLogoPreview" src="" class="logo-preview" style="display: none;">
+                            <input type="file" id="confLogo" class="form-control" accept="image/*">
+                            <input type="hidden" id="confLogoUrl">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Dias e Horários</label>
-                            <input type="text" id="confRodizioPizzaDays" class="form-control"
-                                placeholder="Ex: Todos os dias">
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <h6>📍 Gerenciar Unidades</h6>
+                        <p class="text-muted small">Adicione as unidades da pizzaria. Use "Buscar Coordenadas"
+                            para preencher Lat/Lon automaticamente.</p>
+
+                        <!-- Lista de Unidades -->
+                        <div class="table-responsive mb-3 border rounded">
+                            <table class="table table-sm table-striped m-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Endereço</th>
+                                        <th class="w-100px">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="unitsTableBody">
+                                    <!-- Preenchido via JS -->
+                                </tbody>
+                            </table>
                         </div>
+                        <button type="button" class="btn btn-sm btn-outline-success" onclick="showAddUnitForm()">+
+                            Nova Unidade</button>
 
-                        <div class="col-12">
-                            <hr>
-                            <label class="form-label">Logotipo (Opcional)</label>
-                            <div class="d-flex align-items-center gap-3">
-                                <img id="confLogoPreview" src="" class="logo-preview" style="display: none;">
-                                <input type="file" id="confLogo" class="form-control" accept="image/*">
-                                <input type="hidden" id="confLogoUrl">
-                            </div>
-                        </div>
-
-                        <div class="col-12 mt-4">
-                            <h6>📍 Gerenciar Unidades</h6>
-                            <p class="text-muted small">Adicione as unidades da pizzaria. Use "Buscar Coordenadas"
-                                para preencher Lat/Lon automaticamente.</p>
-
-                            <!-- Lista de Unidades -->
-                            <div class="table-responsive mb-3 border rounded">
-                                <table class="table table-sm table-striped m-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Nome</th>
-                                            <th>Endereço</th>
-                                            <th class="w-100px">Ações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="unitsTableBody">
-                                        <!-- Preenchido via JS -->
-                                    </tbody>
-                                </table>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-success" onclick="showAddUnitForm()">+
-                                Nova Unidade</button>
-
-                            <!-- Formulário de Edição/Criação de Unidade (Escondido por padrão) -->
-                            <div id="unitFormContainer" class="card mt-3 p-3 bg-light border" style="display: none;">
-                                <h6 id="unitFormTitle">Nova Unidade</h6>
-                                <input type="hidden" id="unitIndex"> <!-- -1 para novo -->
-                                <div class="row g-2">
-                                    <div class="col-md-6">
-                                        <label class="form-label small">Nome da Unidade</label>
-                                        <input type="text" id="unitName" class="form-control form-control-sm">
+                        <!-- Formulário de Edição/Criação de Unidade (Escondido por padrão) -->
+                        <div id="unitFormContainer" class="card mt-3 p-3 bg-light border" style="display: none;">
+                            <h6 id="unitFormTitle">Nova Unidade</h6>
+                            <input type="hidden" id="unitIndex"> <!-- -1 para novo -->
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label small">Nome da Unidade</label>
+                                    <input type="text" id="unitName" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">Telefone</label>
+                                    <input type="text" id="unitPhone" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small">Endereço Completo (Rua, Número, Bairro,
+                                        Cidade)</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" id="unitAddress" class="form-control"
+                                            placeholder="Ex: Rua X, 123 - Itaquera, SP">
+                                        <button class="btn btn-outline-primary" type="button"
+                                            onclick="geocodeAddress()">📍 Buscar Coordenadas</button>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label small">Telefone</label>
-                                        <input type="text" id="unitPhone" class="form-control form-control-sm">
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label small">Endereço Completo (Rua, Número, Bairro,
-                                            Cidade)</label>
-                                        <div class="input-group input-group-sm">
-                                            <input type="text" id="unitAddress" class="form-control"
-                                                placeholder="Ex: Rua X, 123 - Itaquera, SP">
-                                            <button class="btn btn-outline-primary" type="button"
-                                                onclick="geocodeAddress()">📍 Buscar Coordenadas</button>
-                                        </div>
-                                        <small class="text-danger" id="geoError" style="display:none;"></small>
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label small">Latitude</label>
-                                        <input type="text" id="unitLat" class="form-control form-control-sm"
-                                            placeholder="-23.xxxxx">
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label small">Longitude</label>
-                                        <input type="text" id="unitLon" class="form-control form-control-sm"
-                                            placeholder="-46.xxxxx">
-                                    </div>
-                                    <div class="col-12 mt-2 d-flex justify-content-end gap-2">
-                                        <button type="button" class="btn btn-sm btn-secondary"
-                                            onclick="hideUnitForm()">Cancelar</button>
-                                        <button type="button" class="btn btn-sm btn-primary"
-                                            onclick="saveUnitLocal()">Salvar Unidade</button>
-                                    </div>
+                                    <small class="text-danger" id="geoError" style="display:none;"></small>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Latitude</label>
+                                    <input type="text" id="unitLat" class="form-control form-control-sm"
+                                        placeholder="-23.xxxxx">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Longitude</label>
+                                    <input type="text" id="unitLon" class="form-control form-control-sm"
+                                        placeholder="-46.xxxxx">
+                                </div>
+                                <div class="col-12 mt-2 d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-sm btn-secondary"
+                                        onclick="hideUnitForm()">Cancelar</button>
+                                    <button type="button" class="btn btn-sm btn-primary"
+                                        onclick="saveUnitLocal()">Salvar Unidade</button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeConfigModal()">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="saveConfig()">Salvar Alterações</button>
-            </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeConfigModal()">Cancelar</button>
+            <button type="button" class="btn btn-primary" onclick="saveConfig()">Salvar Alterações</button>
         </div>
     </div>
 </div>
-
-<!-- Modal Gerenciar Banners -->
-<div id="bannersModal" class="modal modal-custom-bg" tabindex="-1" style="display: none;">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">🖼️ Banners da Home</h5>
-                <button type="button" class="btn-close" onclick="closeBannersModal()"></button>
-            </div>
-            <div class="modal-body">
-                <div id="bannersList" class="mb-4">
-                    <!-- Lista de Banners via JS -->
-                </div>
-
-                <hr>
-                <h6>Adicionar Novo Banner</h6>
-                <form id="newBannerForm" onsubmit="event.preventDefault(); addBanner();">
-                    <div class="row g-2">
-                        <div class="col-md-6">
-                            <input type="text" id="banTitle" class="form-control form-control-sm"
-                                placeholder="Título Principal" required>
-                        </div>
-                        <div class="col-md-6">
-                            <input type="text" id="banSub" class="form-control form-control-sm" placeholder="Subtítulo">
-                        </div>
-                        <div class="col-md-4">
-                            <input type="text" id="banLinkTxt" class="form-control form-control-sm"
-                                placeholder="Texto Botão (Ex: Ver Cardápio)">
-                        </div>
-                        <div class="col-md-4">
-                            <input type="text" id="banLinkUrl" class="form-control form-control-sm"
-                                placeholder="Link (Ex: /cardapio)">
-                        </div>
-                        <div class="col-md-4">
-                            <input type="file" id="banImg" class="form-control form-control-sm" accept="image/*"
-                                required>
-                        </div>
-                        <div class="col-12 mt-2">
-                            <button type="submit" class="btn btn-success btn-sm w-100">Adicionar Banner</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 </div>
+
+
 
 <!-- Elemento de Áudio -->
 <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
@@ -619,6 +586,7 @@
                 document.getElementById('confInsta').value = data.instagram || '';
                 document.getElementById('confFace').value = data.facebook || '';
                 document.getElementById('confAiEnabled').checked = data.ai_enabled !== false;
+                document.getElementById('confVoiceGender').value = data.voice_gender || 'female';
 
                 // Self-Service
                 document.getElementById('confSelfServiceEnabled').checked = data.self_service_enabled === true;
@@ -688,6 +656,7 @@
                 instagram: document.getElementById('confInsta').value,
                 facebook: document.getElementById('confFace').value,
                 ai_enabled: document.getElementById('confAiEnabled').checked,
+                voice_gender: document.getElementById('confVoiceGender').value,
 
                 // Self-Service
                 self_service_enabled: document.getElementById('confSelfServiceEnabled').checked,

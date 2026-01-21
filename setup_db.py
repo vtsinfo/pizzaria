@@ -1,9 +1,9 @@
 import os
 import json
-import hashlib
 from app import app
 from database import db
 from models import Categoria, Produto, User
+from werkzeug.security import generate_password_hash
 
 # Caminho do arquivo JSON
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -16,7 +16,7 @@ def populate():
         # 1. Criar Usuário Admin se não existir
         if User.query.filter_by(username="admin").first() is None:
             print("👤 Criando usuário admin padrão...")
-            default_pass = hashlib.sha256("pizza123".encode()).hexdigest()
+            default_pass = generate_password_hash("pizza123")
             admin = User(username="admin", password_hash=default_pass, role="admin", permissions='["all"]')
             db.session.add(admin)
             print("   -> Usuário criado: admin / Senha: pizza123")

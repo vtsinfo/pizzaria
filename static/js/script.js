@@ -36,6 +36,8 @@ function initAIWidget() {
         .then(data => {
             if (data.tempo_espera) currentWaitTime = data.tempo_espera;
             if (data.units && Array.isArray(data.units)) units = data.units;
+            // Store global config for voice access
+            window.siteConfig = data;
             // Fallback se não houver unidades configuradas
             if (units.length === 0) {
                 units = [{ name: "Unidade Principal", lat: -23.5505, lon: -46.6333, address: "Endereço não configurado", phone: "5511999999999" }];
@@ -1263,29 +1265,58 @@ function playWelcomeMessage() {
     // Verifica se o som está desativado ou se a aba está oculta
     if (localStorage.getItem('site_sound_muted') === 'true' || document.hidden) return;
 
-    // Verifica se já tocou nesta sessão (sessionStorage limpa ao fechar o navegador)
+    // Verifica se já tocou nesta sessão
     if (sessionStorage.getItem('welcome_audio_played')) return;
 
     if ('speechSynthesis' in window) {
-        // Delay para não conflitar com carregamento da página e dar tempo de carregar vozes
-        setTimeout(() => {
-            try {
-                const text = "Olá! Bem-vindo à Pizzaria Colonial. Eu sou a Val, sua assistente virtual.";
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'pt-BR';
-                utterance.rate = 1.1;
-                utterance.volume = 0.7;
-
-                // Tenta selecionar voz brasileira
-                const voices = window.speechSynthesis.getVoices();
-                const brVoice = voices.find(v => v.lang.includes('pt-BR'));
-                if (brVoice) utterance.voice = brVoice;
-
-                window.speechSynthesis.speak(utterance);
-                sessionStorage.setItem('welcome_audio_played', 'true');
-            } catch (e) {
-                console.warn("Autoplay de áudio bloqueado:", e);
+        // Aguarda carregar config (via fetch ou timeout)
+        let attempts = 0;
+        const checkConfig = setInterval(() => {
+            attempts++;
+            if (window.siteConfig || attempts > 20) { // 2s max wait
+                clearInterval(checkConfig);
+                speakWelcome();
             }
-        }, 1500);
+        }, 100);
+    }
+}
+
+function speakWelcome() {
+    try {
+        const utterance = new SpeechSynthesisUtterance();
+        utterance.lang = 'pt-BR';
+        utterance.rate = 1.1;
+        utterance.volume = 0.8;
+
+        // Seleção de Voz Baseada na Config
+        const voices = window.speechSynthesis.getVoices();
+        let selectedVoice = null;
+        const gender = (window.siteConfig && window.siteConfig.voice_gender) || 'female';
+
+        // Preferências conhecidas
+        let assistantName = "Val";
+        if (gender === 'female') {
+            selectedVoice = voices.find(v => v.lang.includes('pt-BR') && (v.name.includes('Google') || v.name.includes('Luciana') || v.name.includes('Female')));
+        } else {
+            selectedVoice = voices.find(v => v.lang.includes('pt-BR') && (v.name.includes('Daniel') || v.name.includes('Male')));
+            assistantName = "Giovani";
+        }
+
+        // Atualiza Nome na UI
+        const nameEl = document.getElementById('ai-assistant-name');
+        if (nameEl) nameEl.innerText = assistantName;
+
+        // Fallback genérico pt-BR
+        if (!selectedVoice) selectedVoice = voices.find(v => v.lang.includes('pt-BR'));
+
+        if (selectedVoice) utterance.voice = selectedVoice;
+
+        const text = `Olá! Bem-vindo à Pizzaria Colonial. Eu sou ${assistantName === 'Val' ? 'a Val' : 'o Giovani'}, seu assistente virtual.`;
+        utterance.text = text;
+
+        window.speechSynthesis.speak(utterance);
+        sessionStorage.setItem('welcome_audio_played', 'true');
+    } catch (e) {
+        console.warn("Autoplay de áudio bloqueado:", e);
     }
 }

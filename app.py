@@ -6,23 +6,20 @@ import io
 import shutil
 import functools
 import hashlib
+from werkzeug.security import generate_password_hash, check_password_hash
 import re
 from datetime import datetime
 from collections import Counter
 from flask_sqlalchemy import SQLAlchemy     # Novo
 from database import db, init_db   # Novo
-from models import User, Categoria, Produto, Pedido, ItemPedido, Ingrediente, FichaTecnica, Reserva, Depoimento # Novo
-
-# --- API DE ESTOQUE (FASE 2) ---
-
-
-
+from models import User, Categoria, Produto, Pedido, ItemPedido, Ingrediente, FichaTecnica, Cupom, Fidelidade, Banner
 app = Flask(__name__)
-app.secret_key = 'vts_pizzaria_secret_key'
+# Em produção, use: os.environ.get('SECRET_KEY')
+app.secret_key = os.environ.get('SECRET_KEY', 'vts_pizzaria_dev_key_change_me')
 
 # --- CONFIGURAÇÃO BANCO DE DADOS (NOVO) ---
-# BASE_DIR será a raiz do projeto (c:\vts-site-python)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# BASE_DIR ajustado para a pasta da aplicação
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INSTANCE_DIR = os.path.join(BASE_DIR, 'instance')
 if not os.path.exists(INSTANCE_DIR):
     os.makedirs(INSTANCE_DIR)
@@ -30,133 +27,32 @@ if not os.path.exists(INSTANCE_DIR):
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(INSTANCE_DIR, 'pizzaria.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Inicializa o Banco
+# Inicializa o banco de dados com a aplicação
 init_db(app)
 
-# --- API DE ESTOQUE (FASE 2) ---
+# --- REGISTRO DE BLUEPRINTS ---
+from public import public_bp
+from api import api_bp
+from admin import admin_bp
 
-@app.route('/api/admin/ingredientes', methods=['GET', 'POST', 'DELETE'])
-def api_ingredientes():
-    if not session.get('logged_in'):
-        return jsonify({"success": False}), 401
+app.register_blueprint(public_bp)
+app.register_blueprint(api_bp)
+app.register_blueprint(admin_bp)
 
-    if request.method == 'GET':
-        ingredientes = Ingrediente.query.all()
-        return jsonify([{
-            "id": i.id,
-            "nome": i.nome,
-            "unidade": i.unidade,
-            "tipo": i.tipo,
-            "estoque_atual": i.estoque_atual,
-            "estoque_minimo": i.estoque_minimo,
-            "custo": i.custo_unitario
-        } for i in ingredientes])
-
-    if request.method == 'POST':
-        data = request.get_json()
-        
-        # Se tem ID, edita. Se não, cria.
-        if data.get('id'):
-            ing = Ingrediente.query.get(data.get('id'))
-            if ing:
-                ing.nome = data.get('nome')
-                ing.unidade = data.get('unidade')
-                ing.tipo = data.get('tipo', 'insumo')
-                ing.estoque_atual = float(data.get('estoque_atual', 0))
-                ing.estoque_minimo = float(data.get('estoque_minimo', 0))
-                ing.custo_unitario = float(data.get('custo', 0))
-        else:
-            new_ing = Ingrediente(
-                nome=data.get('nome'),
-                unidade=data.get('unidade'),
-                tipo=data.get('tipo', 'insumo'),
-                estoque_atual=float(data.get('estoque_atual', 0)),
-                estoque_minimo=float(data.get('estoque_minimo', 0)),
-                custo_unitario=float(data.get('custo', 0))
-            )
-            db.session.add(new_ing)
-        
+# Migração de Fidelidade JSON -> SQL
+with app.app_context():
+    db.create_all() # Garante que TODAS as tabelas (incluindo Banner) existam
+    if os.path.exists(os.path.join(os.path.dirname(__file__), 'fidelidade.json')):
         try:
-            db.session.commit()
-            return jsonify({"success": True})
+            if Fidelidade.query.count() == 0:
+                with open(os.path.join(os.path.dirname(__file__), 'fidelidade.json'), 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    print("--> Migrando fidelidade do JSON para SQL...")
+                    for phone, pts in data.items():
+                        db.session.add(Fidelidade(telefone=phone, pontos=pts))
+                    db.session.commit()
         except Exception as e:
-            return jsonify({"success": False, "message": str(e)}), 500
-
-    if request.method == 'DELETE':
-        data = request.get_json()
-        ing = Ingrediente.query.get(data.get('id'))
-        if ing:
-            db.session.delete(ing)
-            db.session.commit()
-            return jsonify({"success": True})
-        return jsonify({"success": False, "message": "Ingrediente não encontrado"}), 404
-
-@app.route('/api/admin/estoque/baixo', methods=['GET'])
-def api_estoque_baixo():
-    if not session.get('logged_in'):
-        return jsonify({"success": False}), 401
-
-    # Busca ingredientes com estoque abaixo ou igual ao mínimo
-    ingredientes = Ingrediente.query.filter(Ingrediente.estoque_atual <= Ingrediente.estoque_minimo).all()
-    
-    return jsonify([{
-        "id": i.id,
-        "nome": i.nome,
-        "unidade": i.unidade,
-        "estoque_atual": i.estoque_atual,
-        "estoque_minimo": i.estoque_minimo,
-        "tipo": i.tipo
-    } for i in ingredientes])
-
-@app.route('/api/admin/receita/<int:produto_id>', methods=['GET'])
-def get_receita(produto_id):
-    if not session.get('logged_in'):
-        return jsonify([]), 401
-    
-    # Retorna ingredientes vinculados a este produto
-    receita = FichaTecnica.query.filter_by(produto_id=produto_id).all()
-    return jsonify([{
-        "id": item.id,
-        "ingrediente_id": item.ingrediente_id,
-        "nome_ingrediente": item.ingrediente.nome,
-        "unidade": item.ingrediente.unidade,
-        "quantidade": item.quantidade
-    } for item in receita])
-
-@app.route('/api/admin/receita', methods=['POST'])
-def save_receita():
-    if not session.get('logged_in'):
-        return jsonify({"success": False}), 401
-    
-    data = request.get_json()
-    try:
-        produto_id = int(data.get('produto_id'))
-        ingrediente_id = int(data.get('ingrediente_id'))
-    except (ValueError, TypeError):
-        return jsonify({"success": False, "message": "IDs inválidos"}), 400
-        
-    quantidade = float(data.get('quantidade', 0))
-    action = data.get('action') # 'add' or 'remove'
-    
-    if action == 'add':
-        # Verifica se já existe
-        item = FichaTecnica.query.filter_by(produto_id=produto_id, ingrediente_id=ingrediente_id).first()
-        if item:
-            item.quantidade = quantidade # Atualiza
-        else:
-            new_item = FichaTecnica(produto_id=produto_id, ingrediente_id=ingrediente_id, quantidade=quantidade)
-            db.session.add(new_item)
-            
-    elif action == 'remove':
-        item = FichaTecnica.query.filter_by(produto_id=produto_id, ingrediente_id=ingrediente_id).first()
-        if item:
-            db.session.delete(item)
-            
-    try:
-        db.session.commit()
-        return jsonify({"success": True})
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 500
+            print(f"Erro na migração de fidelidade: {e}")
 
 # Caminhos Legados (Mantidos por enquanto para fallback se necessário, mas o objetivo é remover)
 CARDAPIO_CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'cardapio_config.json')
@@ -172,97 +68,7 @@ LOYALTY_FILE = os.path.join(os.path.dirname(__file__), 'fidelidade.json')
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'config.json')
 BANNERS_FILE = os.path.join(os.path.dirname(__file__), 'banners.json')
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
-
-@app.route('/')
-def index():
-    banners = []
-    if os.path.exists(BANNERS_FILE):
-        with open(BANNERS_FILE, 'r', encoding='utf-8') as f:
-            banners = json.load(f)
-            
-    # Busca depoimentos aprovados (limitado a 3 mais recentes)
-    depoimentos = Depoimento.query.filter_by(aprovado=True).order_by(Depoimento.data.desc()).limit(3).all()
-    
-    return render_template('index.html', title='Pizzaria Colonial — Pizzas, Churrasco e Lanches', banners=banners, depoimentos=depoimentos)
-
-@app.route('/cardapio')
-def cardapio():
-    # NOVO: Carrega do Banco de Dados
-    categorias_db = Categoria.query.filter_by(visivel=True).order_by(Categoria.ordem).all()
-    
-    menu = {}
-    config = {}
-    
-    for cat in categorias_db:
-        # Carrega produtos visíveis
-        produtos_db = Produto.query.filter_by(categoria_id=cat.id, visivel=True).all()
-        
-        items_list = []
-        for p in produtos_db:
-            items_list.append({
-                "id": p.id,
-                "nome": p.nome,
-                "desc": p.descricao,
-                "preco": f"R$ {p.preco:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."), # Formata R$ 1.200,50
-                "foto": p.foto_url,
-                "visivel": p.visivel
-            })
-        
-        if items_list:
-            menu[cat.nome] = items_list
-            config[cat.nome] = {
-                "visible": True, 
-                "show_price": cat.exibir_preco
-            }
-            
-    return render_template('cardapio.html', title='Nosso Cardápio — Pizzaria Colonial', menu=menu, config=config)
-
-@app.route('/sobre')
-def sobre():
-    return render_template('sobre.html', title='Sobre Nós — Pizzaria Colonial')
-
-@app.route('/api/depoimento/novo', methods=['POST'])
-def novo_depoimento():
-    try:
-        data = request.get_json()
-        depoimento = Depoimento(
-            nome=data.get('nome'),
-            texto=data.get('texto'),
-            nota=int(data.get('nota', 5))
-        )
-        db.session.add(depoimento)
-        db.session.commit()
-        return jsonify({"success": True, "message": "Obrigado! Seu depoimento foi enviado para aprovação."})
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 500
-
-@app.route('/reservas', methods=['GET', 'POST'])
-def reservas():
-    if request.method == 'POST':
-        try:
-            # Captura dados do formulário
-            nova_reserva = Reserva(
-                nome_cliente=request.form.get('nome'),
-                telefone=request.form.get('telefone'),
-                data_reserva=datetime.strptime(request.form.get('data'), '%Y-%m-%d').date(),
-                hora_reserva=datetime.strptime(request.form.get('hora'), '%H:%M').time(),
-                num_pessoas=int(request.form.get('pessoas')),
-                observacao=request.form.get('obs'),
-                status='Pendente'
-            )
-            db.session.add(nova_reserva)
-            db.session.commit()
-            flash('Sua solicitação de reserva foi enviada com sucesso! Entraremos em contato para confirmar.', 'success')
-            return redirect(url_for('reservas'))
-        except Exception as e:
-            flash(f'Erro ao processar reserva: {str(e)}', 'danger')
-            
-    return render_template('reservas.html', title='Reservas — Pizzaria Colonial')
-
-@app.route('/unidades')
-def unidades():
-    return render_template('unidades.html', title='Nossas Unidades')
-
+RESERVATIONS_FILE = os.path.join(os.path.dirname(__file__), 'reservas.json')
 # --- Context Processor (Injeta dados em todos os templates) ---
 @app.context_processor
 def inject_site_config():
@@ -272,56 +78,24 @@ def inject_site_config():
         "whatsapp": "5511914569028",
         "endereco_principal": "Rua Virgínia Ferni, 1758 - Itaquera, SP",
         "tempo_espera": "40-50 min",
-        "logo_url": "", 
-        "cor_primaria": "#ffc107", 
-        "ai_enabled": True,
-        "theme": "dark", # Novo padrão: Escuro
+        "logo_url": "", # Se vazio, usa texto
+        "cor_primaria": "#ffc107", # Amarelo padrão
+        "ai_enabled": True, # Assistente ativado por padrão
+        "voice_gender": "female", # 'female' ou 'male'
         "instagram": "",
-        "facebook": "",
-        "online_ordering_enabled": False,
-        "manual_payment_confirm": True,
-        "sobre_nos": "A Pizzaria Colonial nasceu do sonho de trazer o verdadeiro sabor da pizza artesanal para a nossa região. Desde a nossa fundação, trabalhamos com ingredientes selecionados e muito carinho em cada receita.\n\nNossa missão é proporcionar momentos felizes e saborosos para você e sua família."
+        "facebook": ""
     }
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-            saved_config = json.load(f)
-            default_config.update(saved_config)
+    try:
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                saved_config = json.load(f)
+                default_config.update(saved_config)
+    except Exception:
+        pass # Garante que falhas no arquivo de config não tirem o site do ar
     return dict(site_config=default_config)
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
-
-@app.route('/api/cardapio')
-def api_cardapio():
-    # NOVO: API via Banco de Dados
-    menu = {}
-    try:
-        categorias_db = Categoria.query.order_by(Categoria.ordem).all()
-        
-        # Carrega promoções (ainda via JSON por enquanto ou migra depois)
-        # Por simplificação, mantemos a lógica de promoção separada ou desativada neste refactor inicial
-        # Idealmente, Promocoes virariam tabela.
-        
-        for cat in categorias_db:
-            produtos_db = Produto.query.filter_by(categoria_id=cat.id).all()
-            items_list = []
-            for p in produtos_db:
-                items_list.append({
-                    "id": p.id,
-                    "nome": p.nome,
-                    "desc": p.descricao,
-                    "preco": f"R$ {p.preco:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-                    "foto": p.foto_url,
-                    "visivel": p.visivel
-                })
-            
-            if items_list:
-                menu[cat.nome] = items_list
-                
-        return jsonify(menu)
-    except Exception as e:
-        print(f"Erro na API Cardapio SQL: {e}")
-        return jsonify({})
 
 # Rota de Login
 @app.route('/login', methods=['GET', 'POST'])
@@ -330,7 +104,7 @@ def login():
     
     # Cria usuário padrão (admin/pizza123) se banco estiver vazio
     if User.query.count() == 0:
-        default_pass = hashlib.sha256("pizza123".encode()).hexdigest()
+        default_pass = generate_password_hash("pizza123")
         admin = User(username="admin", password_hash=default_pass, role="admin", permissions='["all"]')
         db.session.add(admin)
         db.session.commit()
@@ -343,9 +117,8 @@ def login():
         user = User.query.filter_by(username=username).first()
         
         if user:
-            input_hash = hashlib.sha256(password.encode()).hexdigest()
             # Verifica senha
-            if user.password_hash == input_hash:
+            if check_password_hash(user.password_hash, password):
                 session['logged_in'] = True
                 session['username'] = user.username
                 session['role'] = user.role
@@ -374,6 +147,30 @@ def logout():
     return redirect(url_for('login'))
 
 # --- Helpers ---
+def pedido_to_dict(p):
+    """Converte um objeto Pedido para dicionário compatível com o Front-end."""
+    meta = {}
+    if p.metadata_json:
+        try: meta = json.loads(p.metadata_json)
+        except: pass
+    
+    return {
+        "id": p.id,
+        "timestamp": p.data_hora.strftime("%d/%m/%Y %H:%M:%S") if p.data_hora else "",
+        "customer": p.cliente_nome,
+        "phone": p.cliente_telefone,
+        "address": p.cliente_endereco,
+        "status": p.status,
+        "total": f"R$ {(p.total or 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+        "items": [{"name": i.produto_nome, "price": f"R$ {(i.preco_unitario or 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."), "qty": i.quantidade} for i in p.itens],
+        "fee": meta.get('taxa_entrega') or 'R$ 0,00',
+        "method": meta.get('metodo_envio', 'Não informado'),
+        "paymentMethod": p.metodo_pagamento or meta.get('paymentMethod', 'Não informado'),
+        "change": meta.get('change', ''),
+        "obs": meta.get('obs', ''),
+        "motoboy": meta.get('motoboy', '')
+    }
+
 def log_activity(action):
     entry = {
         "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
@@ -394,72 +191,22 @@ def log_activity(action):
     with open(LOGS_FILE, 'w', encoding='utf-8') as f:
         json.dump(logs, f, indent=4, ensure_ascii=False)
 
+def save_json_list(filepath, new_item):
+    items = []
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                items = json.load(f)
+        except: pass
+    
+    items.append(new_item)
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(items, f, indent=4, ensure_ascii=False)
+
 def check_permission(perm):
     user_perms = session.get('permissions', [])
     if 'all' in user_perms: return True
     return perm in user_perms
-
-# Rota para o Monitor de Cozinha (KDS)
-@app.route('/cozinha')
-def cozinha_monitor():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    return render_template('cozinha.html')
-
-# Rota para a interface administrativa
-@app.route('/admin')
-def admin_panel():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    
-    if not check_permission('manage_menu'):
-        return """
-        <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
-            <h1>🚫 Acesso Negado</h1>
-            <p>Você não tem permissão para acessar esta página ou sua sessão expirou.</p>
-            <a href="/logout" style="background: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Sair e Tentar Novamente</a>
-        </div>
-        """, 403
-        
-    return render_template('admin_cardapio.html', title='Cardápio — Admin Colonial')
-
-@app.route('/admin/pedidos')
-def admin_pedidos():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    return render_template('admin_pedidos.html', title='Pedidos em Tempo Real — Pizzaria Colonial')
-
-@app.route('/admin/reservas')
-def admin_reservas():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    return render_template('admin_reservas.html', title='Gestão de Reservas — Admin Colonial')
-
-@app.route('/admin/cupons')
-def admin_cupons():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    return render_template('admin_cupons.html', title='Cupons — Admin Colonial')
-
-@app.route('/admin/usuarios')
-def admin_usuarios():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    if session.get('role') != 'admin':
-        return "Acesso restrito a administradores", 403
-    return render_template('admin_usuarios.html', title='Usuários — Admin Colonial')
-
-@app.route('/admin/promocoes')
-def admin_promocoes():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    return render_template('admin_promocoes.html', title='Promoções — Admin Colonial')
-
-@app.route('/admin/depoimentos')
-def admin_depoimentos():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    return render_template('admin_depoimentos.html', title='Moderação de Depoimentos — Admin Colonial')
 
 @app.route('/admin/logs')
 def admin_logs():
@@ -477,10 +224,19 @@ def admin_logs():
 def api_admin_cupons():
     if not session.get('logged_in'):
         return jsonify({}), 401
-    if os.path.exists(COUPONS_FILE):
-        with open(COUPONS_FILE, 'r', encoding='utf-8') as f:
-            return jsonify(json.load(f))
-    return jsonify({})
+    
+    # Retorna do Banco de Dados formatado como o front espera (Dict)
+    cupons = Cupom.query.all()
+    result = {}
+    for c in cupons:
+        result[c.codigo] = {
+            "valor": c.valor,
+            "tipo": c.tipo,
+            "desc": c.descricao,
+            "ativo": c.ativo,
+            "id": c.id
+        }
+    return jsonify(result)
 
 @app.route('/api/admin/cupons/save', methods=['POST'])
 def api_admin_save_cupons():
@@ -488,11 +244,38 @@ def api_admin_save_cupons():
         return jsonify({"success": False}), 401
     try:
         data = request.get_json()
-        with open(COUPONS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
-        log_activity("Atualizou lista de cupons")
+        if data is None:
+            return jsonify({"success": False, "message": "Dados inválidos"}), 400
+        
+        # Sincroniza o JSON recebido com o Banco de Dados
+        # 1. Remove cupons que não estão no payload (comportamento de "Salvar Tudo")
+        existing = Cupom.query.all()
+        for c in existing:
+            if c.codigo not in data:
+                db.session.delete(c)
+        
+        # 2. Atualiza ou Cria
+        for code, info in data.items():
+            c = Cupom.query.filter_by(codigo=code).first()
+            if c:
+                c.tipo = info.get('tipo', 'fixo')
+                c.valor = parse_price(info.get('valor', 0))
+                c.descricao = info.get('desc', '')
+            else:
+                new_c = Cupom(
+                    codigo=code,
+                    tipo=info.get('tipo', 'fixo'),
+                    valor=parse_price(info.get('valor', 0)),
+                    descricao=info.get('desc', ''),
+                    ativo=True
+                )
+                db.session.add(new_c)
+                
+        db.session.commit()
+        log_activity("Atualizou lista de cupons (SQL)")
         return jsonify({"success": True})
     except Exception as e:
+        db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
 
 # Rota para Gerar PDF do Cardápio
@@ -558,6 +341,7 @@ def parse_price(price_str):
     if not price_str: return 0.0
     try:
         if isinstance(price_str, (int, float)): return float(price_str)
+        if not isinstance(price_str, str): return 0.0
         clean = str(price_str).replace('R$', '').replace('.', '').replace(',', '.').strip()
         clean = clean.replace('\xa0', '') 
         return float(clean)
@@ -783,6 +567,29 @@ def upload_image():
     except Exception as e:
         return jsonify({"success": False, "message": "Erro ao salvar arquivo"}), 500
 
+# Rota para Upload de Imagens de Banner (Específica)
+@app.route('/api/admin/upload/banner', methods=['POST'])
+def upload_banner():
+    if not session.get('logged_in'):
+        return jsonify({"success": False}), 401
+    
+    if 'file' not in request.files:
+        return jsonify({"success": False, "message": "Nenhum arquivo enviado"}), 400
+        
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"success": False}), 400
+        
+    # Reutiliza lógica de salvamento mas com prefixo para organização
+    safe_filename = re.sub(r'[^a-zA-Z0-9_.-]', '', file.filename)
+    filename = f"banner_{int(datetime.now().timestamp())}_{safe_filename}"
+    
+    try:
+        file.save(os.path.join(UPLOAD_FOLDER, filename))
+        return jsonify({"success": True, "url": url_for('static', filename=f'uploads/{filename}')})
+    except Exception as e:
+        return jsonify({"success": False, "message": "Erro ao salvar arquivo"}), 500
+
 # Rota para restaurar backup
 @app.route('/api/admin/cardapio/restore', methods=['POST'])
 def restore_cardapio():
@@ -803,335 +610,21 @@ def validar_cupom():
         data = request.get_json()
         codigo = data.get('codigo', '').upper().strip()
         
-        if not os.path.exists(COUPONS_FILE):
-            # Cria cupons padrão se o arquivo não existir
-            default_coupons = {
-                "PIZZA10": {"valor": 10, "tipo": "porcentagem", "desc": "10% OFF"},
-                "BEMVINDO": {"valor": 5.00, "tipo": "fixo", "desc": "R$ 5,00 de desconto"}
-            }
-            with open(COUPONS_FILE, 'w', encoding='utf-8') as f:
-                json.dump(default_coupons, f, indent=4, ensure_ascii=False)
+        # Busca no Banco de Dados
+        cupom = Cupom.query.filter_by(codigo=codigo, ativo=True).first()
         
-        with open(COUPONS_FILE, 'r', encoding='utf-8') as f:
-            coupons = json.load(f)
-            
-        if codigo in coupons:
-            return jsonify({"valid": True, "codigo": codigo, **coupons[codigo]})
+        if cupom:
+            return jsonify({
+                "valid": True, 
+                "codigo": cupom.codigo, 
+                "valor": cupom.valor, 
+                "tipo": cupom.tipo, 
+                "desc": cupom.descricao
+            })
         
         return jsonify({"valid": False, "message": "Cupom inválido ou expirado."})
     except Exception as e:
         return jsonify({"valid": False, "message": "Erro ao processar cupom."}), 500
-
-
-def parse_price(price_input):
-    if not price_input: return 0.0
-    if isinstance(price_input, (int, float)): return float(price_input)
-    try:
-        # Remove R$, spaces, convert , to .
-        clean = str(price_input).replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
-        return float(clean)
-    except:
-        return 0.0
-
-# --- API DE PEDIDOS ---
-
-# Helper para converter Pedido SQL -> Dict (Compatibilidade Legada)
-def pedido_to_dict(p):
-    # Recupera metadados
-    meta = {}
-    if p.metadata_json:
-        try: meta = json.loads(p.metadata_json)
-        except: pass
-    
-    items_list = []
-    for i in p.itens:
-        items_list.append({
-            "name": i.produto_nome,
-            "price": f"R$ {i.preco_unitario:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        })
-    
-    return {
-        "id": p.id,
-        "customer": p.cliente_nome,
-        "phone": p.cliente_telefone,
-        "method": meta.get('metodo_envio', ''),
-        "address": p.cliente_endereco,
-        "total": f"R$ {p.total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-        "items": items_list,
-        "obs": meta.get('obs', ''), # Assumindo que obs está no meta ou criar campo
-        "coupon": meta.get('coupon'),
-        "fee": f"R$ {meta.get('taxa_entrega', 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-        "timestamp": p.data_hora.strftime("%d/%m/%Y %H:%M:%S"),
-        "status": p.status,
-        "motoboy": meta.get('motoboy'),
-        "payment_info": {
-            "method": p.metodo_pagamento or "Não informado",
-            "change": meta.get('troco_para')
-        }
-    }
-
-@app.route('/api/pedido/novo', methods=['POST'])
-def novo_pedido():
-    try:
-        data = request.get_json()
-        
-        # Validação: Valor Total > 0
-        total_str = data.get('total', '0').replace('R$', '').replace('.', '').replace(',', '.').strip()
-        try:
-            total_val = float(total_str)
-            if total_val <= 0:
-                pass 
-                # return jsonify({"success": False, "message": "O valor total do pedido deve ser maior que zero."}), 400
-        except ValueError:
-            return jsonify({"success": False, "message": "Valor total inválido."}), 400
-
-        # Recupera taxa de entrega
-        fee_str = data.get('fee', '0').replace('R$ ', '').replace('R$', '').replace('.', '').replace(',', '.').strip()
-        try: fee_val = float(fee_str)
-        except: fee_val = 0.0
-
-        meta = {
-            "taxa_entrega": fee_val,
-            "coupon": data.get('coupon'),
-            "metodo_envio": data.get('method'),
-            "obs": data.get('obs', ''),
-            "motoboy": None,
-            "troco_para": data.get('change')
-        }
-
-        # Cria Pedido SQL
-        pedido = Pedido(
-            data_hora=datetime.now(),
-            cliente_nome=data.get('customer'),
-            cliente_telefone=data.get('phone'),
-            cliente_endereco=data.get('address'),
-            status='Pendente', # Status inicial
-            metodo_pagamento=data.get('paymentMethod', 'Site'),
-            total=total_val,
-            metadata_json=json.dumps(meta)
-        )
-        db.session.add(pedido)
-        db.session.flush() # Gerar ID (necessário para itens)
-        
-        # Cria Itens
-        for item in data.get('items', []):
-            # Parse preço unitario
-            i_price = parse_price(item.get('price'))
-            
-            # Tenta linkar com produto existente
-            prod = Produto.query.filter_by(nome=item.get('name')).first()
-            
-            item_obj = ItemPedido(
-                pedido_id=pedido.id,
-                produto_nome=item.get('name'),
-                produto_id=prod.id if prod else None,
-                quantidade=1, 
-                preco_unitario=i_price,
-                observacao=""
-            )
-            db.session.add(item_obj)
-            
-        db.session.commit()
-            
-        return jsonify({"success": True})
-
-    except Exception as e:
-        db.session.rollback()
-        print(f"Erro ao criar pedido: {e}")
-        return jsonify({"success": False, "message": "Erro ao processar pedido."}), 500
-
-@app.route('/api/pedido/online', methods=['POST'])
-def novo_pedido_online():
-    try:
-        data = request.get_json()
-        
-        # 1. Config Check
-        config = {}
-        if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, 'r', encoding='utf-8') as f: config = json.load(f)
-        
-        if not config.get('online_ordering_enabled', False):
-            return jsonify({"success": False, "message": "Pedidos online estão temporariamente desativados."}), 403
-
-        # 2. Dados Basicos
-        cliente = data.get('cliente', {})
-        items = data.get('items', [])
-        pagamento = data.get('pagamento', {})
-        
-        if not items:
-            return jsonify({"success": False, "message": "O carrinho está vazio."}), 400
-
-        # 3. Define Status Inicial
-        manual_confirm = config.get('manual_payment_confirm', True)
-        initial_status = 'Aguardando Confirmação' if manual_confirm else 'Pendente'
-
-        # 4. Calcula Totais
-        total_items = 0.0
-        # Re-confirma precos do banco para seguranca (Simplificado aqui, confia no front por enqto ou TODO)
-        total_items = float(data.get('total', 0)) # TODO: Validar server-side
-        
-        # 5. Metadata (Pagamento e Endereco)
-        meta = {
-            "metodo_envio": data.get('tipo_entrega', 'Retirada'), # Entrega ou Retirada
-            "taxa_entrega": data.get('taxa_entrega', 0),
-            "obs": data.get('obs', ''),
-            "forma_pagamento": pagamento.get('metodo'), # 'maquina_cartao', 'maquina_pix', 'dinheiro'
-            "troco_para": pagamento.get('troco_para'),
-            "endereco_completo": f"{cliente.get('rua')}, {cliente.get('numero')} - {cliente.get('bairro')}" if data.get('tipo_entrega') == 'Entrega' else 'Retirada no Balcão'
-        }
-
-        # 6. Cria Pedido
-        novo_pedido = Pedido(
-            cliente_nome=cliente.get('nome'),
-            cliente_telefone=cliente.get('telefone'),
-            cliente_endereco=meta['endereco_completo'],
-            status=initial_status,
-            metodo_pagamento=pagamento.get('metodo_label'), # Texto legivel: "Cartão (Maquininha)"
-            total=total_items,
-            metadata_json=json.dumps(meta, ensure_ascii=False)
-        )
-        db.session.add(novo_pedido)
-        db.session.flush() # ID
-
-        # 7. Itens
-        for item in items:
-            item_db = ItemPedido(
-                pedido_id=novo_pedido.id,
-                produto_nome=item.get('nome'),
-                produto_id=item.get('id'), # Pode ser None
-                quantidade=int(item.get('qtd', 1)),
-                preco_unitario=float(item.get('preco', 0)),
-                observacao=item.get('obs', '')
-            )
-            db.session.add(item_db)
-
-        db.session.commit()
-        
-        # Log (Opcional)
-        # log_activity(f"Novo pedido online #{novo_pedido.id} - {novo_pedido.status}")
-
-        return jsonify({
-            "success": True, 
-            "id": novo_pedido.id, 
-            "message": "Pedido recebido com sucesso!",
-            "status": initial_status
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"success": False, "message": f"Erro interno: {str(e)}"}), 500
-
-
-
-@app.route('/api/admin/pedidos')
-def get_pedidos():
-    if not session.get('logged_in'):
-        return jsonify([]), 401
-    
-    # Busca pedidos que NÃO estão concluídos (fila ativa)
-    # Assumindo que 'concluido' sai da tela principal
-    pedidos = Pedido.query.filter(Pedido.status != 'concluido').order_by(Pedido.data_hora.desc()).all()
-    
-    return jsonify([pedido_to_dict(p) for p in pedidos])
-
-@app.route('/api/admin/pedido/concluir', methods=['POST'])
-def concluir_pedido():
-    if not session.get('logged_in'):
-        return jsonify({"success": False}), 401
-    
-    data = request.get_json()
-    order_id = data.get('id')
-    
-    try:
-        pedido = Pedido.query.get(order_id)
-        if pedido:
-            # --- Lógica de Estoque (Fase 2) ---
-            # Carrega Config
-            config = {}
-            if os.path.exists(CONFIG_FILE):
-                try: 
-                    with open(CONFIG_FILE, 'r') as f: 
-                        config = json.load(f)
-                except: pass
-            
-            print(f"DEBUG: Concluding Order {order_id}. Config Inventory: {config.get('inventory_enabled')}")
-            
-            if config.get('inventory_enabled', False):
-                allow_negative = config.get('allow_negative_stock', True)
-                print(f"DEBUG: Allow Negative: {allow_negative}")
-                
-                # Verifica Estoque Primeiro (se não permitir negativo)
-                if not allow_negative:
-                    for item in pedido.itens:
-                        if not item.produto_id: 
-                            print(f"DEBUG: Item {item.produto_nome} has no Product ID")
-                            continue
-                        receita = FichaTecnica.query.filter_by(produto_id=item.produto_id).all()
-                        if not receita: print(f"DEBUG: No recipe for Product {item.produto_id}")
-                        for r in receita:
-                            qtd_necessaria = r.quantidade * item.quantidade
-                            if r.ingrediente.estoque_atual < qtd_necessaria:
-                                return jsonify({"success": False, "message": f"Estoque insuficiente de {r.ingrediente.nome}. Necessário: {qtd_necessaria}, Atual: {r.ingrediente.estoque_atual}"}), 400
-                
-                # Baixa o Estoque
-                print("DEBUG: Deducting Stock...")
-                for item in pedido.itens:
-                    if not item.produto_id: continue
-                    receita = FichaTecnica.query.filter_by(produto_id=item.produto_id).all()
-                    for r in receita:
-                        qtd_necessaria = r.quantidade * item.quantidade
-                        r.ingrediente.estoque_atual -= qtd_necessaria
-                        print(f"DEBUG: Deducted {qtd_necessaria} from {r.ingrediente.nome}. New Stock: {r.ingrediente.estoque_atual}")
-                        db.session.add(r.ingrediente) # Marca para update
-
-            pedido.status = 'concluido'
-            
-            # --- Lógica de Fidelidade (Híbrida: Mantendo JSON por enquanto) ---
-            try:
-                # Extrai apenas números do telefone
-                phone = ''.join(filter(str.isdigit, pedido.cliente_telefone or ''))
-                points = int(pedido.total) # 1 ponto por real
-                
-                if phone and points > 0:
-                    loyalty = {}
-                    if os.path.exists(LOYALTY_FILE):
-                        with open(LOYALTY_FILE, 'r', encoding='utf-8') as lf:
-                            loyalty = json.load(lf)
-                    
-                    loyalty[phone] = loyalty.get(phone, 0) + points
-                    
-                    with open(LOYALTY_FILE, 'w', encoding='utf-8') as lf:
-                        json.dump(loyalty, lf, indent=4)
-            except Exception as e: print(f"Erro fidelidade: {e}")
-            
-            db.session.commit()
-            log_activity(f"Concluiu pedido #{order_id} (SQL)")
-            return jsonify({"success": True})
-            
-        return jsonify({"success": False, "message": "Pedido não encontrado"}), 404
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"success": False, "message": str(e)}), 500
-
-@app.route('/api/admin/pedido/status', methods=['POST'])
-def update_pedido_status():
-    if not session.get('logged_in'):
-        return jsonify({"success": False}), 401
-    
-    data = request.get_json()
-    order_id = data.get('id')
-    new_status = data.get('status')
-    
-    try:
-        pedido = Pedido.query.get(order_id)
-        if pedido:
-            pedido.status = new_status
-            db.session.commit()
-            log_activity(f"Alterou status do pedido #{order_id} para {new_status} (SQL)")
-            return jsonify({"success": True})
-        return jsonify({"success": False, "message": "Pedido não encontrado"}), 404
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route('/api/admin/pedido/update_total', methods=['POST'])
 def update_pedido_total():
@@ -1205,63 +698,6 @@ def get_historico():
     pedidos = Pedido.query.filter_by(status='concluido').order_by(Pedido.data_hora.desc()).all()
     return jsonify([pedido_to_dict(p) for p in pedidos])
 
-@app.route('/api/admin/historico/csv')
-def export_historico_csv():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    
-    start_date = request.args.get('start')
-    end_date = request.args.get('end')
-    
-    query = Pedido.query.filter_by(status='concluido')
-    
-    if start_date and end_date:
-        try:
-            # Ajusta para cobrir o dia inteiro
-            s_dt = datetime.strptime(start_date, "%Y-%m-%d")
-            e_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
-            query = query.filter(Pedido.data_hora >= s_dt, Pedido.data_hora <= e_dt)
-        except: pass
-        
-    pedidos = query.order_by(Pedido.data_hora.desc()).all()
-    
-    output = io.StringIO()
-    writer = csv.writer(output, delimiter=';')
-    writer.writerow(['ID', 'Data', 'Cliente', 'Telefone', 'Metodo', 'Endereco', 'Total', 'Itens', 'Obs', 'Motoboy', 'Status Final'])
-    
-    for p in pedidos:
-        # Recupera meta
-        meta = {}
-        if p.metadata_json:
-            try: meta = json.loads(p.metadata_json)
-            except: pass
-            
-        # Formata itens
-        item_str = " | ".join([f"{i.produto_nome} (R$ {i.preco_unitario:.2f})" for i in p.itens])
-        
-        writer.writerow([
-            p.id,
-            p.data_hora.strftime("%d/%m/%Y %H:%M:%S"),
-            p.cliente_nome,
-            p.cliente_telefone,
-            meta.get('metodo_envio', ''),
-            p.cliente_endereco,
-            f"R$ {p.total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-            item_str,
-            meta.get('obs', ''),
-            meta.get('motoboy', ''),
-            p.status
-        ])
-        
-    output.seek(0)
-    filename = f"historico_pedidos_{start_date}_a_{end_date}.csv" if start_date and end_date else "historico_pedidos_geral.csv"
-    
-    return Response(
-        output.getvalue().encode('utf-8-sig'),
-        mimetype="text/csv",
-        headers={"Content-disposition": f"attachment; filename={filename}"}
-    )
-
 @app.route('/admin/dashboard')
 def admin_dashboard():
     if not session.get('logged_in'):
@@ -1298,110 +734,6 @@ def admin_estoque():
     produtos = Produto.query.order_by(Produto.nome).all()
     return render_template('admin_estoque.html', title='Gestão de Estoque — Pizzaria Colonial', produtos=produtos)
 
-@app.route('/admin/estoque/baixo')
-def admin_estoque_baixo():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-        
-    # Checa se está habilitado
-    config = {}
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-        except: pass
-        
-    if not config.get('inventory_enabled', False):
-         flash('O módulo de estoque está desativado.', 'warning')
-         return redirect(url_for('admin_dashboard'))
-
-    return render_template('admin_estoque_baixo.html', title='Relatório de Baixo Estoque — Pizzaria Colonial')
-
-@app.route('/api/admin/reservas', methods=['GET'])
-def api_admin_reservas():
-    if not session.get('logged_in'):
-        return jsonify([]), 401
-    
-    # Busca reservas futuras ou recentes (últimos 7 dias)
-    # Para simplificar, trazemos todas ordenadas por data desc
-    reservas = Reserva.query.order_by(Reserva.data_reserva.desc(), Reserva.hora_reserva.desc()).all()
-    
-    return jsonify([{
-        "id": r.id,
-        "nome": r.nome_cliente,
-        "telefone": r.telefone,
-        "data": r.data_reserva.strftime('%d/%m/%Y'),
-        "hora": r.hora_reserva.strftime('%H:%M'),
-        "pessoas": r.num_pessoas,
-        "obs": r.observacao,
-        "status": r.status
-    } for r in reservas])
-
-@app.route('/api/admin/reservas/status', methods=['POST'])
-def api_admin_reservas_status():
-    if not session.get('logged_in'):
-        return jsonify({"success": False}), 401
-        
-    data = request.get_json()
-    reserva = Reserva.query.get(data.get('id'))
-    if reserva:
-        reserva.status = data.get('status')
-        db.session.commit()
-        log_activity(f"Alterou status da reserva #{reserva.id} para {reserva.status}")
-        return jsonify({"success": True})
-        
-    return jsonify({"success": False, "message": "Reserva não encontrada"}), 404
-
-@app.route('/api/admin/depoimentos', methods=['GET'])
-def api_admin_depoimentos():
-    if not session.get('logged_in'):
-        return jsonify([]), 401
-    
-    # Lista depoimentos ordenados por data (mais recentes primeiro)
-    depoimentos = Depoimento.query.order_by(Depoimento.data.desc()).all()
-    
-    return jsonify([{
-        "id": d.id,
-        "nome": d.nome,
-        "texto": d.texto,
-        "nota": d.nota,
-        "data": d.data.strftime('%d/%m/%Y %H:%M'),
-        "aprovado": d.aprovado
-    } for d in depoimentos])
-
-@app.route('/api/admin/depoimento/status', methods=['POST'])
-def api_admin_depoimento_status():
-    if not session.get('logged_in'):
-        return jsonify({"success": False}), 401
-    
-    data = request.get_json()
-    d_id = data.get('id')
-    aprovado = data.get('aprovado')
-    
-    depoimento = Depoimento.query.get(d_id)
-    if depoimento:
-        depoimento.aprovado = aprovado
-        db.session.commit()
-        log_activity(f"{'Aprovou' if aprovado else 'Ocultou'} depoimento #{d_id}")
-        return jsonify({"success": True})
-    return jsonify({"success": False, "message": "Depoimento não encontrado"}), 404
-
-@app.route('/api/admin/depoimento', methods=['DELETE'])
-def api_admin_depoimento_delete():
-    if not session.get('logged_in'):
-        return jsonify({"success": False}), 401
-    
-    data = request.get_json()
-    d_id = data.get('id')
-    
-    depoimento = Depoimento.query.get(d_id)
-    if depoimento:
-        db.session.delete(depoimento)
-        db.session.commit()
-        log_activity(f"Excluiu depoimento #{d_id}")
-        return jsonify({"success": True})
-    return jsonify({"success": False, "message": "Depoimento não encontrado"}), 404
-
 @app.route('/admin/config', methods=['GET', 'POST'])
 def admin_config():
     if not session.get('logged_in'):
@@ -1431,8 +763,6 @@ def admin_config():
             current_config['telefone'] = data.get('telefone')
             current_config['whatsapp'] = data.get('whatsapp')
             current_config['endereco_principal'] = data.get('endereco_principal')
-            current_config['theme'] = data.get('theme')
-            current_config['sobre_nos'] = data.get('sobre_nos')
             
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 json.dump(current_config, f, indent=4, ensure_ascii=False)
@@ -1461,34 +791,16 @@ def admin_stats():
     start_date = request.args.get('start')
     end_date = request.args.get('end')
     
-    dates = []
-    
-    def extract_dates(file_path):
-        if os.path.exists(file_path):
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    for item in data:
-                        if 'timestamp' in item:
-                            # Extrai data (dd/mm/yyyy)
-                            date_str = item['timestamp'].split(' ')[0]
-                            
-                            # Filtro de Data
-                            if start_date and end_date:
-                                try:
-                                    item_dt = datetime.strptime(date_str, "%d/%m/%Y").date()
-                                    start_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
-                                    end_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
-                                    if not (start_dt <= item_dt <= end_dt):
-                                        continue
-                                except: pass
-                            
-                            dates.append(date_str)
-            except: pass
+    query = Pedido.query
+    if start_date and end_date:
+        try:
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59)
+            query = query.filter(Pedido.data_hora.between(start_dt, end_dt))
+        except: pass
 
-    # Coleta datas de pedidos ativos e do histórico
-    extract_dates(ORDERS_FILE)
-    extract_dates(HISTORY_FILE)
+    pedidos = query.all()
+    dates = [p.data_hora.strftime("%d/%m/%Y") for p in pedidos if p.data_hora]
     
     counts = Counter(dates)
     # Ordena cronologicamente
@@ -1507,43 +819,26 @@ def admin_stats_categories():
     start_date = request.args.get('start')
     end_date = request.args.get('end')
     
-    # Carrega mapeamento de itens -> categorias para saber a qual categoria o item pertence
+    # Mapeamento via Banco de Dados
     item_category_map = {}
-    if os.path.exists(CARDAPIO_FILE):
-        try:
-            with open(CARDAPIO_FILE, 'r', encoding='utf-8') as f:
-                menu = json.load(f)
-                for category, items in menu.items():
-                    for item in items:
-                        item_category_map[item['nome'].lower().strip()] = category
-        except: pass
-        
-    category_counts = Counter()
-    
-    def process_orders(file_path):
-        if os.path.exists(file_path):
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    for order in data:
-                        # Filtro de Data
-                        if start_date and end_date and 'timestamp' in order:
-                            try:
-                                order_dt = datetime.strptime(order['timestamp'].split(' ')[0], "%d/%m/%Y").date()
-                                s_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
-                                e_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
-                                if not (s_dt <= order_dt <= e_dt):
-                                    continue
-                            except: pass
-                        
-                        for item in order.get('items', []):
-                            name = item['name'].lower().strip()
-                            cat = item_category_map.get(name, 'Outros')
-                            category_counts[cat] += 1
-            except: pass
+    for p in Produto.query.all():
+        cat_nome = p.categoria.nome if p.categoria else "Sem Categoria"
+        item_category_map[p.nome.lower().strip()] = cat_nome
 
-    process_orders(ORDERS_FILE)
-    process_orders(HISTORY_FILE)
+    category_counts = Counter()
+    query = Pedido.query
+    if start_date and end_date:
+        try:
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59)
+            query = query.filter(Pedido.data_hora.between(start_dt, end_dt))
+        except: pass
+
+    for order in query.all():
+        for item in order.itens:
+            name = item.produto_nome.lower().strip() if item.produto_nome else ""
+            cat = item_category_map.get(name, 'Outros')
+            category_counts[cat] += 1
     
     return jsonify({
         "labels": list(category_counts.keys()),
@@ -1561,32 +856,19 @@ def admin_stats_clients():
     client_counts = Counter()
     client_names = {} 
 
-    def process_orders(file_path):
-        if os.path.exists(file_path):
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    for order in data:
-                        # Filtro de Data
-                        if start_date and end_date and 'timestamp' in order:
-                            try:
-                                order_dt = datetime.strptime(order['timestamp'].split(' ')[0], "%d/%m/%Y").date()
-                                s_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
-                                e_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
-                                if not (s_dt <= order_dt <= e_dt):
-                                    continue
-                            except: pass
-                        
-                        phone = order.get('phone', '').strip()
-                        name = order.get('customer', 'Desconhecido').strip()
-                        
-                        if phone:
-                            client_counts[phone] += 1
-                            client_names[phone] = name 
-            except: pass
+    query = Pedido.query
+    if start_date and end_date:
+        try:
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59)
+            query = query.filter(Pedido.data_hora.between(start_dt, end_dt))
+        except: pass
 
-    process_orders(ORDERS_FILE)
-    process_orders(HISTORY_FILE)
+    for order in query.all():
+        phone = order.cliente_telefone.strip() if order.cliente_telefone else ""
+        if phone:
+            client_counts[phone] += 1
+            client_names[phone] = order.cliente_nome or "Desconhecido"
     
     top_5 = client_counts.most_common(5)
     
@@ -1610,31 +892,17 @@ def admin_stats_peak_hours():
     
     hours_counts = Counter()
     
-    def process_orders(file_path):
-        if os.path.exists(file_path):
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    for order in data:
-                        if 'timestamp' in order:
-                            try:
-                                # timestamp format: "dd/mm/yyyy HH:MM:SS"
-                                dt_str = order['timestamp']
-                                dt_obj = datetime.strptime(dt_str, "%d/%m/%Y %H:%M:%S")
-                                
-                                # Date filtering
-                                if start_date and end_date:
-                                    s_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
-                                    e_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
-                                    if not (s_dt <= dt_obj.date() <= e_dt):
-                                        continue
-                                
-                                hours_counts[dt_obj.hour] += 1
-                            except: pass
-            except: pass
+    query = Pedido.query
+    if start_date and end_date:
+        try:
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59)
+            query = query.filter(Pedido.data_hora.between(start_dt, end_dt))
+        except: pass
 
-    process_orders(ORDERS_FILE)
-    process_orders(HISTORY_FILE)
+    for order in query.all():
+        if order.data_hora:
+            hours_counts[order.data_hora.hour] += 1
     
     # Garante que todas as horas 00-23 existam no gráfico
     labels = [f"{h:02d}h" for h in range(24)]
@@ -1679,51 +947,73 @@ def api_usuarios():
         return jsonify({"success": False}), 403
         
     if request.method == 'GET':
-        if os.path.exists(USERS_FILE):
-            with open(USERS_FILE, 'r', encoding='utf-8') as f:
-                return jsonify(json.load(f))
-        return jsonify([])
+        users = User.query.all()
+        return jsonify([{
+            "username": u.username,
+            "role": u.role,
+            "permissions": (
+                json.loads(u.permissions) 
+                if (u.permissions and u.permissions.strip()) 
+                else []
+            ) if isinstance(u.permissions, str) else (
+                u.permissions 
+                if isinstance(u.permissions, list) 
+                else []
+            ),
+            "password": u.password_hash # Mantém compatibilidade com front (hash)
+        } for u in users])
         
     if request.method == 'POST':
         data = request.get_json()
-        # Validação básica
+        if not isinstance(data, list): return jsonify({"success": False, "message": "Formato inválido"}), 400
         if not data: return jsonify({"success": False}), 400
         
-        # --- Lógica de Log de Alterações ---
         try:
-            old_users = []
-            if os.path.exists(USERS_FILE):
-                with open(USERS_FILE, 'r', encoding='utf-8') as f:
-                    old_users = json.load(f)
+            # Sincronização com o Banco de Dados (Garante que u tenha a chave username)
+            incoming_usernames = [u.get('username') for u in data if u.get('username')]
             
-            old_map = {u['username']: u for u in old_users}
-            new_map = {u['username']: u for u in data}
+            # 1. Remove usuários excluídos
+            existing_users = User.query.all()
+            for db_user in existing_users:
+                if db_user.username not in incoming_usernames:
+                    # Evita excluir o próprio usuário logado por acidente, se desejar
+                    if db_user.username == session.get('username'):
+                        continue
+                    db.session.delete(db_user)
+                    log_activity(f"Excluiu o usuário '{db_user.username}'")
             
-            # Verifica criados e editados
-            for u in data:
-                uname = u['username']
-                if uname not in old_map:
-                    log_activity(f"Criou o usuário '{uname}'")
-                elif u.get('password') != old_map[uname].get('password') or u.get('role') != old_map[uname].get('role'):
-                    log_activity(f"Editou o usuário '{uname}'")
+            # 2. Atualiza ou Cria
+            for u_data in data:
+                username = u_data.get('username')
+                pwd = u_data.get('password', '')
+                role = u_data.get('role', 'editor')
+                perms = json.dumps(u_data.get('permissions', []))
+                
+                user = User.query.filter_by(username=username).first()
+                
+                # Se a senha enviada não parece um hash (ex: pbkdf2:sha256...), gera um novo
+                new_hash = pwd
+                if pwd and not pwd.startswith(('pbkdf2:sha256:', 'scrypt:')):
+                    new_hash = generate_password_hash(pwd)
+                
+                if user:
+                    # Atualiza
+                    if user.role != role or user.permissions != perms or (pwd and user.password_hash != new_hash):
+                        user.role = role
+                        user.permissions = perms
+                        if pwd: user.password_hash = new_hash
+                        log_activity(f"Editou o usuário '{username}'")
+                else:
+                    # Cria
+                    new_user = User(username=username, password_hash=new_hash, role=role, permissions=perms)
+                    db.session.add(new_user)
+                    log_activity(f"Criou o usuário '{username}'")
             
-            # Verifica excluídos
-            for uname in old_map:
-                if uname not in new_map:
-                    log_activity(f"Excluiu o usuário '{uname}'")
-        except Exception as e: print(f"Erro ao gerar logs de usuário: {e}")
-        
-        # Aplica hash nas senhas que não estiverem hashadas (novas ou editadas)
-        for u in data:
-            pwd = u.get('password', '')
-            # Se não for um hash SHA256 válido (64 chars hex), gera o hash
-            if not re.match(r'^[a-fA-F0-9]{64}$', pwd):
-                u['password'] = hashlib.sha256(pwd.encode()).hexdigest()
-
-        with open(USERS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4)
-        
-        return jsonify({"success": True})
+            db.session.commit()
+            return jsonify({"success": True})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route('/api/admin/change_password', methods=['POST'])
 def change_own_password():
@@ -1739,24 +1029,19 @@ def change_own_password():
         
     username = session.get('username')
     
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE, 'r', encoding='utf-8') as f:
-            users = json.load(f)
-            
-        for u in users:
-            if u['username'] == username:
-                # Verifica senha atual (Hash)
-                curr_hash = hashlib.sha256(current_pass.encode()).hexdigest()
-                if u['password'] != curr_hash:
-                     return jsonify({"success": False, "message": "Senha atual incorreta"}), 400
-                
-                # Define nova senha
-                u['password'] = hashlib.sha256(new_pass.encode()).hexdigest()
-                with open(USERS_FILE, 'w', encoding='utf-8') as f:
-                    json.dump(users, f, indent=4)
-                log_activity(f"Alterou a própria senha")
-                return jsonify({"success": True})
-            
+    user = User.query.filter_by(username=username).first()
+    
+    if user:
+        # Verifica senha atual
+        if not check_password_hash(user.password_hash, current_pass):
+                return jsonify({"success": False, "message": "Senha atual incorreta"}), 400
+        
+        # Define nova senha
+        user.password_hash = generate_password_hash(new_pass)
+        db.session.commit()
+        log_activity(f"Alterou a própria senha")
+        return jsonify({"success": True})
+        
     return jsonify({"success": False, "message": "Usuário não encontrado"}), 404
 
 @app.route('/api/admin/promocoes', methods=['GET', 'POST'])
@@ -1780,10 +1065,8 @@ def api_promocoes():
 
 @app.route('/api/admin/categorias')
 def api_categorias():
-    if os.path.exists(CARDAPIO_FILE):
-        with open(CARDAPIO_FILE, 'r', encoding='utf-8') as f:
-            return jsonify(list(json.load(f).keys()))
-    return jsonify([])
+    cats = Categoria.query.order_by(Categoria.ordem).all()
+    return jsonify([c.nome for c in cats])
 
 # --- Configurações Gerais e Fidelidade ---
 
@@ -1810,17 +1093,6 @@ def api_config_geral():
             return jsonify(json.load(f))
     return jsonify({})
 
-@app.route('/api/fidelidade/pontos', methods=['POST'])
-def api_fidelidade_pontos():
-    data = request.get_json()
-    phone = ''.join(filter(str.isdigit, data.get('phone', '')))
-    
-    if os.path.exists(LOYALTY_FILE):
-        with open(LOYALTY_FILE, 'r', encoding='utf-8') as f:
-            loyalty = json.load(f)
-            return jsonify({"pontos": loyalty.get(phone, 0)})
-            
-    return jsonify({"pontos": 0})
 
 @app.route('/api/admin/banners', methods=['GET', 'POST'])
 def api_admin_banners():
@@ -1828,17 +1100,63 @@ def api_admin_banners():
         return jsonify({"success": False}), 401
     
     if request.method == 'GET':
-        if os.path.exists(BANNERS_FILE):
-            with open(BANNERS_FILE, 'r', encoding='utf-8') as f:
-                return jsonify(json.load(f))
-        return jsonify([])
+        banners = Banner.query.order_by(Banner.ordem).all()
+        return jsonify([{
+            "id": b.id,
+            "titulo": b.titulo,
+            "descricao": b.descricao,
+            "imagem": b.imagem_url,
+            "ordem": b.ordem,
+            "ativo": b.ativo
+        } for b in banners])
         
     if request.method == 'POST':
         data = request.get_json()
-        with open(BANNERS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4)
+        
+        # Estratégia simples: Limpar e Recriar (para garantir ordem e exclusões)
+        # Como banners não têm relacionamentos complexos, isso é seguro.
+        try:
+            Banner.query.delete()
+            
+            for i, item in enumerate(data):
+                b = Banner(
+                    titulo=item.get('titulo', ''),
+                    descricao=item.get('descricao', ''),
+                    imagem_url=item.get('imagem', ''),
+                    ordem=i,
+                    ativo=item.get('ativo', True)
+                )
+                db.session.add(b)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"success": False, "message": str(e)}), 500
+            
         log_activity("Atualizou banners da home")
         return jsonify({"success": True})
+
+@app.route('/api/admin/reservas', methods=['GET', 'POST'])
+def api_admin_reservas():
+    if not session.get('logged_in'):
+        return jsonify({"success": False}), 401
+        
+    if request.method == 'GET':
+        if os.path.exists(RESERVATIONS_FILE):
+            with open(RESERVATIONS_FILE, 'r', encoding='utf-8') as f:
+                # Retorna lista invertida (mais recentes primeiro)
+                data = json.load(f)
+                return jsonify(data[::-1])
+        return jsonify([])
+        
+    if request.method == 'POST':
+        # Para atualizar status (ex: confirmar/cancelar)
+        data = request.get_json()
+        if os.path.exists(RESERVATIONS_FILE):
+            with open(RESERVATIONS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+            log_activity("Atualizou lista de reservas")
+            return jsonify({"success": True})
+        return jsonify({"success": False, "message": "Arquivo não encontrado"}), 404
 
 if __name__ == '__main__':
     app.run(debug=True)

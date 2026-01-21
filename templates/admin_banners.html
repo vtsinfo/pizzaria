@@ -1,0 +1,149 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Gerenciar Banners{% endblock %}
+
+{% block navbar_actions %}
+<a href="/admin/dashboard" class="btn btn-outline-secondary btn-sm">⬅️ Voltar</a>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>🖼️ Gerenciar Banners da Home</h2>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card p-4">
+                <h5 class="mb-4">Banners Ativos</h5>
+                <div id="bannersList">
+                    <!-- Lista de Banners via JS -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-warning" role="status"></div>
+                        <p class="mt-2 text-muted">Carregando banners...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card p-4">
+                <h5 class="mb-4">Novo Banner</h5>
+                <form id="newBannerForm" onsubmit="event.preventDefault(); addBanner();">
+                    <div class="mb-3">
+                        <label class="form-label small">Título Principal</label>
+                        <input type="text" id="banTitle" class="form-control" placeholder="Ex: Promoção de Terça"
+                            required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Subtítulo</label>
+                        <input type="text" id="banSub" class="form-control" placeholder="Ex: Pizza em dobro">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Texto do Botão</label>
+                        <input type="text" id="banLinkTxt" class="form-control" placeholder="Ex: Peça Agora">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Link de Destino</label>
+                        <input type="text" id="banLinkUrl" class="form-control" placeholder="Ex: /cardapio"
+                            value="/cardapio">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Imagem (Upload)</label>
+                        <input type="file" id="banImg" class="form-control" accept="image/*" required>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Adicionar Banner</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', loadBanners);
+
+    async function loadBanners() {
+        try {
+            const res = await fetch('/api/admin/banners');
+            const banners = await res.json();
+            const list = document.getElementById('bannersList');
+
+            list.innerHTML = '';
+
+            if (banners.length === 0) {
+                list.innerHTML = '<div class="alert alert-secondary">Nenhum banner cadastrado.</div>';
+                return;
+            }
+
+            banners.forEach(ban => {
+                const item = document.createElement('div');
+                item.className = 'card mb-3 bg-dark border-secondary';
+                item.innerHTML = `
+                    <div class="row g-0">
+                        <div class="col-md-4">
+                            <img src="${ban.image_url}" class="img-fluid rounded-start h-100 object-fit-cover" style="max-height: 150px; width: 100%;">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h6 class="card-title text-warning">${ban.title}</h6>
+                                <p class="card-text small text-white-50 mb-1">${ban.subtitle || ''}</p>
+                                <p class="card-text small mb-2"><span class="badge bg-secondary">${ban.link_text} ➔ ${ban.link_url}</span></p>
+                                <div class="text-end">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteBanner(${ban.id})">Remover</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+
+        } catch (e) {
+            console.error(e);
+            document.getElementById('bannersList').innerHTML = '<div class="alert alert-danger">Erro ao carregar banners.</div>';
+        }
+    }
+
+    async function addBanner() {
+        const title = document.getElementById('banTitle').value;
+        const sub = document.getElementById('banSub').value;
+        const linkTxt = document.getElementById('banLinkTxt').value;
+        const linkUrl = document.getElementById('banLinkUrl').value;
+        const file = document.getElementById('banImg').files[0];
+
+        if (!file) return alert('Selecione uma imagem.');
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('subtitle', sub);
+        formData.append('link_text', linkTxt);
+        formData.append('link_url', linkUrl);
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/admin/banners', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                document.getElementById('newBannerForm').reset();
+                loadBanners();
+            } else {
+                alert('Erro: ' + data.message);
+            }
+        } catch (e) {
+            alert('Erro de conexão.');
+        }
+    }
+
+    async function deleteBanner(id) {
+        if (!confirm('Tem certeza?')) return;
+        try {
+            await fetch('/api/admin/banners/' + id, { method: 'DELETE' });
+            loadBanners();
+        } catch (e) { alert('Erro ao remover.'); }
+    }
+</script>
+{% endblock %}

@@ -6,9 +6,11 @@
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
-            <div class="card shadow-sm border-0">
+            <div class="card bg-dark border-secondary text-light shadow-lg">
                 <div class="card-body p-4">
-                    <h2 class="text-center mb-4 text-primary"><i class="fas fa-calendar-alt"></i> Reservar Mesa</h2>
+                    <h2 class="text-center mb-4 text-warning" style="font-family: 'Playfair Display', serif;">
+                        <i class="fas fa-calendar-alt"></i> Reservar Mesa
+                    </h2>
 
                     {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
@@ -23,43 +25,46 @@
 
                     <form method="POST" action="/reservas">
                         <div class="mb-3">
-                            <label for="nome" class="form-label">Seu Nome</label>
-                            <input type="text" class="form-control" id="nome" name="nome" required
-                                placeholder="Ex: João Silva">
+                            <label for="nome" class="form-label text-warning">Seu Nome</label>
+                            <input type="text" class="form-control bg-black text-light border-secondary" id="nome"
+                                name="nome" required placeholder="Ex: João Silva">
                         </div>
                         <div class="mb-3">
-                            <label for="telefone" class="form-label">Telefone / WhatsApp</label>
-                            <input type="tel" class="form-control" id="telefone" name="telefone" required
-                                placeholder="(11) 99999-9999">
+                            <label for="telefone" class="form-label text-warning">Telefone / WhatsApp</label>
+                            <input type="tel" class="form-control bg-black text-light border-secondary" id="telefone"
+                                name="telefone" required placeholder="(11) 99999-9999">
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="data" class="form-label">Data</label>
-                                <input type="date" class="form-control" id="data" name="data" required>
+                                <label for="data" class="form-label text-warning">Data</label>
+                                <input type="date" class="form-control bg-black text-light border-secondary" id="data"
+                                    name="data" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="hora" class="form-label">Horário</label>
-                                <input type="time" class="form-control" id="hora" name="hora" required>
+                                <label for="hora" class="form-label text-warning">Horário</label>
+                                <input type="time" class="form-control bg-black text-light border-secondary" id="hora"
+                                    name="hora" required>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="pessoas" class="form-label">Número de Pessoas</label>
-                            <input type="number" class="form-control" id="pessoas" name="pessoas" min="1" value="2"
-                                required>
+                            <label for="pessoas" class="form-label text-warning">Número de Pessoas</label>
+                            <input type="number" class="form-control bg-black text-light border-secondary" id="pessoas"
+                                name="pessoas" min="1" value="2" required>
                         </div>
                         <div class="mb-3">
-                            <label for="obs" class="form-label">Observações (Opcional)</label>
-                            <textarea class="form-control" id="obs" name="obs" rows="3"
-                                placeholder="Ex: Aniversário, cadeira de bebê..."></textarea>
+                            <label for="obs" class="form-label text-warning">Observações (Opcional)</label>
+                            <textarea class="form-control bg-black text-light border-secondary" id="obs" name="obs"
+                                rows="3" placeholder="Ex: Aniversário, cadeira de bebê..."></textarea>
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg fw-bold">Solicitar Reserva</button>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="/" class="btn btn-outline-light me-md-2 fw-bold">Cancelar</a>
+                            <button type="submit" class="btn btn-warning fw-bold flex-grow-1">Solicitar Reserva</button>
                         </div>
                     </form>
-                    <div class="text-center mt-3">
-                        <small class="text-muted">Ou reserve pelo WhatsApp:</small><br>
+                    <div class="text-center mt-4 pt-3 border-top border-secondary">
+                        <small class="text-secondary">Ou reserve pelo WhatsApp:</small><br>
                         <a href="https://wa.me/{{ site_config.whatsapp }}" target="_blank"
-                            class="btn btn-outline-success btn-sm mt-1">
+                            class="btn btn-outline-success btn-sm mt-2">
                             <i class="fab fa-whatsapp"></i> Falar com Atendente
                         </a>
                     </div>

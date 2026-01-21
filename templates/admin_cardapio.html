@@ -15,29 +15,21 @@
         <div class="card p-3 mb-4 border-dashed bg-light">
             <div class="d-flex gap-2 align-items-center">
                 <span class="fw-bold text-secondary me-2">Gestão em Massa:</span>
-                <a href="/admin/cardapio/template" class="btn btn-outline-success btn-sm">📥 Baixar Modelo Excel
-                    (CSV)</a>
+                <a href="/admin/cardapio/template" class="btn btn-outline-secondary btn-sm">📥 Baixar Modelo</a>
 
-                <div class="vr"></div>
+                <form class="d-inline" action="/admin/cardapio/import" method="post" enctype="multipart/form-data">
+                    <input type="file" name="file" id="csvFile" class="d-none" accept=".csv"
+                        onchange="this.form.submit()">
+                    <label for="csvFile" class="btn btn-primary btn-sm pointer">📤 Importar CSV</label>
+                </form>
 
-                <select id="uploadMode" class="form-select form-select-sm w-auto-custom" title="Modo de Importação">
-                    <option value="merge">Mesclar (Manter existentes)</option>
-                    <option value="replace">Substituir TUDO</option>
-                </select>
+                <a href="/admin/cardapio/restore" class="btn btn-outline-secondary btn-sm"
+                    onclick="return confirm('Restaurar backup?')">↺ Restaurar</a>
 
-                <button class="btn btn-outline-primary btn-sm" onclick="document.getElementById('csvInput').click()">📤
-                    Importar Tabela Preenchida</button>
-                <input type="file" id="csvInput" accept=".csv" style="display: none" @change="uploadCSV">
-
-                <div class="vr"></div>
-                <button class="btn btn-outline-warning btn-sm" @click="restoreBackup">↺ Restaurar Backup</button>
-
-                <div class="vr"></div>
-                <div class="vr"></div>
-                <button class="btn btn-secondary btn-sm" @click="openConfigModal">⚙️ Configurar Exibição</button>
-                <a href="/api/cardapio/pdf" target="_blank" class="btn btn-danger btn-sm">📄 PDF</a>
+                <button class="btn btn-outline-secondary btn-sm" onclick="openConfigDisplay()">⚙️ Exibição</button>
+                <a href="/api/cardapio/pdf" target="_blank" class="btn btn-outline-secondary btn-sm">📄 PDF</a>
                 <button class="btn btn-success btn-sm" @click="shareWhatsApp">📲 Enviar Zap</button>
-                <button class="btn btn-info btn-sm text-white" @click="showPreview = true">👁️ Preview</button>
+                <button class="btn btn-outline-secondary btn-sm" @click="showPreview = true">👁️ Preview</button>
             </div>
             <small class="text-muted mt-2 d-block">Baixe o modelo, edite no Excel mantendo o formato CSV (separado
                 por ponto e vírgula) e importe para atualizar preços e itens rapidamente.</small>

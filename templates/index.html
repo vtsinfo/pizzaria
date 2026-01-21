@@ -86,10 +86,11 @@
             da Região</h1>
         <p class="lead mb-5 text-light fs-4">A melhor massa, ingredientes selecionados e tradição desde 1998.</p>
         <div class="d-flex justify-content-center gap-3">
-            <a href="{{ url_for('cardapio') }}"
+            <a href="{{ url_for('public.cardapio') }}"
                 class="btn btn-outline-light btn-lg fw-bold px-5 rounded-pill shadow-lg">Ver
                 Cardápio</a>
-            <a href="{{ url_for('reservas') }}" class="btn btn-outline-light btn-lg fw-bold px-5 rounded-pill">Reservar
+            <a href="{{ url_for('public.reservas') }}"
+                class="btn btn-outline-light btn-lg fw-bold px-5 rounded-pill">Reservar
                 Mesa</a>
         </div>
     </div>
@@ -99,7 +100,7 @@
 <div class="container py-5">
     <div class="row text-center g-4 reveal">
         <div class="col-md-6 col-lg-3">
-            <a href="{{ url_for('cardapio') }}" class="text-decoration-none">
+            <a href="{{ url_for('public.cardapio') }}" class="text-decoration-none">
                 <div class="card-gourmet h-100">
                     <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80"
                         class="card-img-top" alt="Pizzas">
@@ -112,7 +113,7 @@
             </a>
         </div>
         <div class="col-md-6 col-lg-3">
-            <a href="{{ url_for('cardapio') }}" class="text-decoration-none">
+            <a href="{{ url_for('public.cardapio') }}" class="text-decoration-none">
                 <div class="card-gourmet h-100">
                     <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80"
                         class="card-img-top" alt="Hamburgueres">
@@ -125,7 +126,7 @@
             </a>
         </div>
         <div class="col-md-6 col-lg-3">
-            <a href="{{ url_for('cardapio') }}" class="text-decoration-none">
+            <a href="{{ url_for('public.cardapio') }}" class="text-decoration-none">
                 <div class="card-gourmet h-100">
                     <img src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80"
                         class="card-img-top" alt="Churrasco">
@@ -139,7 +140,7 @@
             </a>
         </div>
         <div class="col-md-6 col-lg-3">
-            <a href="{{ url_for('cardapio') }}" class="text-decoration-none">
+            <a href="{{ url_for('public.cardapio') }}" class="text-decoration-none">
                 <div class="card-gourmet h-100">
                     <img src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=800&q=80"
                         class="card-img-top" alt="Drinks">

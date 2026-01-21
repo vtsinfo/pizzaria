@@ -1,0 +1,75 @@
+=== CONHECIMENTO E RESPOSTAS DA VAL (PIZZARIA COLONIAL) ===
+
+--- RESPOSTAS ESTÁTICAS (Palavras-chave) ---
+(Fonte: static/js/ai_knowledge.json)
+
+1. Cardápio Geral (Keywords: cardápio|menu|opções|comida|fome|tem o que)
+   Resposta: "Temos Pizzas (doces e salgadas), Hambúrgueres Artesanais, Marmitex, Esfihas e Porções. Quer ver o cardápio completo?"
+
+2. Sabores de Pizza (Keywords: pizza|sabores|sabor|quais pizzas)
+   Resposta: "São mais de 50 sabores! Temos as Clássicas (Mussarela, Calabresa), as Especiais (Carne Seca, Camarão) e as Doces (Nutella, prestígio). Posso te mostrar a lista?"
+
+3. Rodízio (Keywords: rodízio|rodizio|buffet|comer a vontade)
+   Resposta: "Nosso rodízio é completo: Pizzas, Carnes, Buffet, Comida Japonesa e Sobremesas. Seg-Qui R$ 42,90 | Sex-Dom e Feriados R$ 45,90."
+
+4. Preços (Keywords: preço|valor|quanto custa|custa)
+   Resposta: "Pizzas a partir de R$ 48,99. Rodízio a partir de R$ 42,90. Marmitex a partir de R$ 24,99. Consulte a aba Cardápio para detalhes!"
+
+5. Entrega/Delivery (Keywords: entrega|delivery|entregam|ifood|casa|pedir)
+   Resposta: "Entregamos sim! Por favor, digite seu **CEP** para eu verificar a unidade mais próxima e se atendemos sua região (raio de 6km)."
+
+6. Taxa de Entrega (Keywords: taxa|frete|custo entrega|valor entrega)
+   Resposta: "A taxa de entrega varia conforme a distância (aprox. R$ 1,50/km + taxa fixa). Digite seu **CEP** para eu calcular o valor exato!"
+
+7. Horário de Funcionamento (Keywords: horário|aberto|fecha|funcionamento|hora)
+   Resposta: "Funcionamos todos os dias! Seg-Qui: 18h às 23h30 | Sex-Sáb: 18h às 00h | Dom: 18h às 23h30."
+
+8. Endereço/Unidades (Keywords: endereço|onde fica|localização|unidades|unidade)
+   Resposta: "Temos 4 unidades: Itaquera (Rua Virgínia Ferni), Cidade IV Centenário, Parque Paineiras e Guarulhos. Qual fica melhor para você?"
+
+9. Contato (Keywords: telefone|contato|whatsapp|zap)
+   Resposta: "Nosso WhatsApp principal é (11) 91456-9028. Pode chamar para pedidos ou reservas!"
+
+10. Reservas (Keywords: reserva|reservar|mesa|lugar)
+    Resposta: "Você pode reservar sua mesa direto aqui pelo site na aba 'Reservas' ou pelo WhatsApp."
+
+11. Promoções (Keywords: promoção|promoções|desconto|barato)
+    Resposta: "Temos pizzas promocionais (Calabresa, Baiana, Brócolis, etc) por R$ 49,99 e R$ 52,99. Confira no cardápio!"
+
+12. Pagamento (Keywords: pagamento|cartão|pix|aceita)
+    Resposta: "Aceitamos Cartões de Crédito, Débito, PIX e Vale Refeição (Alelo, Sodexo, VR, Ticket)."
+
+13. Bordas (Keywords: borda|recheada|catupiry|cheddar)
+    Resposta: "Temos bordas recheadas sim! Opções: Catupiry, Cheddar, Chocolate (nas doces) e Coxinha. Acréscimo de R$ 12,00."
+
+14. Meio a Meio (Keywords: meia|metade|dois sabores)
+    Resposta: "Pode sim! Fazemos pizza meio a meio. O valor cobrado será o da pizza de maior valor."
+
+15. Opções Vegetarianas/Veganas (Keywords: vegetariana|vegano|sem carne)
+    Resposta: "Temos opções vegetarianas deliciosas, como Brócolis, Quatro Queijos, Marguerita e Palmito. Para veganos, podemos fazer sem queijo se preferir!"
+
+16. Bebidas (Keywords: bebida|refri|coca|cerveja)
+    Resposta: "Temos Coca-Cola, Guaraná, Sucos Del Valle e Cervejas (Long Neck e Lata). Vai uma gelada?"
+
+17. Saudações (Keywords: oi|olá|bom dia|boa tarde|boa noite)
+    Respostas (Aleatórias):
+    - "Olá! Bem-vindo à Pizzaria Colonial. Eu sou a assistente virtual. Deu fome aí? 🍕"
+    - "Oi! Sou a IA da Colonial. Posso te ajudar com cardápio, reservas ou delivery?"
+    - "E aí! Tudo bem? Vai uma pizza hoje? Como posso ajudar?"
+
+18. Agradecimentos (Keywords: obrigado|valeu|agradeço)
+    Respostas (Aleatórias):
+    - "Por nada! Estamos à disposição. 🍕"
+    - "De nada! Se bater a fome, é só chamar."
+    - "Disponha! Bom apetite!"
+
+19. Identidade (Keywords: quem é você|ia|robô)
+    Resposta: "Sou a assistente virtual da Pizzaria Colonial! Estou aqui para anotar seu pedido, tirar dúvidas e te ajudar a comer bem. 😄"
+
+20. Tempo de Espera (Keywords: demora|tempo|espera)
+    Resposta: "Nosso tempo médio de entrega é de 40 a 50 minutos. No salão, o rodízio é imediato! 🚀"
+
+--- FALLBACK (Quando a IA não entende) ---
+
+Mensagem Padrão:
+"Desculpe, ainda estou aprendendo sobre pizzas! 😅 Posso ajudar com Cardápio, Horários, Endereços ou Reservas. O que você precisa?"
