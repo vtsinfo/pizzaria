@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<style>
+  .card-gourmet {
+    background: rgba(33, 37, 41, 0.95);
+    border: 1px solid #495057;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    height: 100%;
+  }
+
+  .card-gourmet:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border-color: #ffc107;
+  }
+
+  .card-gourmet img {
+    height: 220px;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+
+  .card-gourmet:hover img {
+    transform: scale(1.08);
+  }
+
+  .price-badge {
+    background: rgba(0, 0, 0, 0.8);
+    color: #ffc107;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    border: 1px solid #ffc107;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="py-5 mt-5">
+  <div class="container py-5">
+    <div class="text-center mb-5 reveal">
+      <h1 class="display-3 fw-bold text-warning" style="font-family: 'Playfair Display', serif;">Nosso Cardápio Visual
+      </h1>
+      <p class="text-secondary lead">Sinta o sabor através das imagens. Qualidade Colonial em cada detalhe.</p>
+    </div>
+
+    <!-- Categorias Tabs -->
+    <!-- Categorias Tabs -->
+    <ul class="nav nav-pills mb-5 justify-content-center gap-3 reveal" id="menuTabs" role="tablist">
+      {% for category, items in menu.items() %}
+      {% if config.get(category, {}).get('visible', True) %}
+      <li class="nav-item">
+        <button class="nav-link {{ 'active' if loop.first else '' }} rounded-pill px-4"
+          id="{{ category|lower|replace(' ', '-')|replace('ú','u')|replace('ç','c') }}-tab" data-bs-toggle="pill"
+          data-bs-target="#{{ category|lower|replace(' ', '-')|replace('ú','u')|replace('ç','c') }}">{{ category|upper
+          }}</button>
+      </li>
+      {% endif %}
+      {% endfor %}
+    </ul>
+
+    <div class="tab-content" id="menuTabsContent">
+      {% for category, items in menu.items() %}
+      {% if config.get(category, {}).get('visible', True) %}
+      <div class="tab-pane fade {{ 'show active' if loop.first else '' }}"
+        id="{{ category|lower|replace(' ', '-')|replace('ú','u')|replace('ç','c') }}">
+
+        <!-- Header da Categoria -->
+        <div class="col-12 mb-4 text-center">
+          <h3 class="text-warning d-inline-block border-bottom border-warning pb-2 px-4">{{ category }}</h3>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+          {% for item in items %}
+          <!-- Debug: Item {{ item.nome }} Visible: {{ item.visivel }} -->
+          {% if item.visivel %}
+          <div class="col-md-6 col-lg-4">
+            <div class="card-gourmet h-100">
+              <div style="height: 220px; overflow: hidden; position: relative;">
+                <img src="{{ item.foto if item.foto else url_for('static', filename='img/placeholder_pizza.jpg') }}"
+                  class="card-img-top w-100 h-100" style="object-fit: cover;" alt="{{ item.nome }}"
+                  onerror="this.src='https://placehold.co/600x400?text=Sem+Foto'">
+              </div>
+              <div class="p-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h5 class="text-white mb-0">{{ item.nome }}</h5>
+                  {% if config.get(category, {}).get('show_price', True) %}
+                  <span class="price-badge">{{ item.preco }}</span>
+                  {% endif %}
+                </div>
+                <p class="text-secondary small">{{ item.desc }}</p>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+          {% if items|length == 0 %}
+          <div class="col-12 text-center text-white">
+            <p>Nenhum item visível nesta categoria.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+
+    </div>
+
+    <div class="text-center mt-5 reveal">
+      <p class="text-secondary mb-4">Preços sujeitos a alteração. Consulte a unidade mais próxima.</p>
+      <a href="https://wa.me/5511914569028" target="_blank"
+        class="btn btn-warning btn-lg rounded-pill px-5 fw-bold shadow-lg">
+        <i class="bi bi-whatsapp me-2"></i>FAZER PEDIDO PELO WHATSAPP
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

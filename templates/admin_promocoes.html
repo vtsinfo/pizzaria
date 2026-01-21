@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .admin-header {
+            background: #343a40;
+            color: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="admin-header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <h3 class="m-0">🍕 Admin Colonial</h3>
+            <div>
+                <a href="/admin/dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+                <a href="/admin/motoboys" class="btn btn-outline-light btn-sm me-2">Motoboys</a>
+                <a href="/admin/promocoes" class="btn btn-light btn-sm me-2 fw-bold">Promoções</a>
+                <a href="/logout" class="btn btn-danger btn-sm">Sair</a>
+            </div>
+        </div>
+    </nav>
+
+    <div id="app" class="container">
+        {% raw %}
+        <div class="card p-4">
+            <h4>Promoções Agendadas</h4>
+            <p class="text-muted">Configure descontos que ativam automaticamente em horários específicos.</p>
+
+            <div class="card bg-light p-3 mb-4">
+                <h5>Nova Regra</h5>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Nome da Promoção</label>
+                        <input type="text" class="form-control" v-model="newPromo.name" placeholder="Ex: Happy Hour">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Desconto (%)</label>
+                        <input type="number" class="form-control" v-model="newPromo.discount">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Início</label>
+                        <input type="time" class="form-control" v-model="newPromo.start">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Fim</label>
+                        <input type="time" class="form-control" v-model="newPromo.end">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Categorias</label>
+                        <select class="form-select" v-model="newPromo.categories" multiple style="height: 100px">
+                            <option value="Todas">Todas</option>
+                            <option v-for="cat in categories" :value="cat">{{ cat }}</option>
+                        </select>
+                        <small class="text-muted">Segure Ctrl para selecionar várias</small>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label d-block">Dias da Semana</label>
+                        <div class="form-check form-check-inline" v-for="(day, idx) in daysOfWeek">
+                            <input class="form-check-input" type="checkbox" :value="idx" v-model="newPromo.days">
+                            <label class="form-check-label">{{ day }}</label>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-success" @click="addPromo">Criar Promoção</button>
+                    </div>
+                </div>
+            </div>
+
+            <div v-for="(promo, index) in promos" :key="index" class="card mb-3 border-warning">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title text-warning">{{ promo.name }} ({{ promo.discount }}% OFF)</h5>
+                        <p class="mb-1">🕒 {{ promo.start }} às {{ promo.end }} | 📅 {{ formatDays(promo.days) }}</p>
+                        <small class="text-muted">Categorias: {{ promo.categories.join(', ') }}</small>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" v-model="promo.active" @change="savePromos">
+                        <label class="form-check-label">Ativa</label>
+                    </div>
+                    <button class="btn btn-outline-danger btn-sm ms-3" @click="removePromo(index)">Excluir</button>
+                </div>
+            </div>
+        </div>
+        {% endraw %}
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    promos: [],
+                    categories: [],
+                    daysOfWeek: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+                    newPromo: { name: '', discount: 10, start: '18:00', end: '20:00', days: [], categories: ['Todas'], active: true }
+                }
+            },
+            mounted() {
+                this.fetchData();
+            },
+            methods: {
+                async fetchData() {
+                    const resPromos = await fetch('/api/admin/promocoes');
+                    this.promos = await resPromos.json();
+
+                    const resCats = await fetch('/api/admin/categorias');
+                    this.categories = await resCats.json();
+                },
+                formatDays(days) {
+                    return days.map(d => this.daysOfWeek[d]).join(', ');
+                },
+                async addPromo() {
+                    if (!this.newPromo.name || this.newPromo.days.length === 0) {
+                        alert('Preencha o nome e selecione pelo menos um dia.');
+                        return;
+                    }
+                    this.promos.push({ ...this.newPromo });
+                    await this.savePromos();
+                    this.newPromo.name = ''; // Reset básico
+                },
+                async removePromo(index) {
+                    if (confirm('Excluir promoção?')) {
+                        this.promos.splice(index, 1);
+                        await this.savePromos();
+                    }
+                },
+                async savePromos() {
+                    await fetch('/api/admin/promocoes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.promos)
+                    });
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>

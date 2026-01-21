@@ -1,0 +1,7 @@
+{
+    "COLONIAL02": {
+        "valor": 10,
+        "tipo": "porcentagem",
+        "desc": "Desconto de 10% no pedido por site"
+    }
+}

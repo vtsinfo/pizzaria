@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .admin-header {
+            background: #343a40;
+            color: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="admin-header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <h3 class="m-0">🍕 Admin Colonial</h3>
+            <div>
+                <a href="/admin/dashboard" class="btn btn-light btn-sm me-2 fw-bold">Dashboard</a>
+                <a href="/admin" class="btn btn-outline-light btn-sm me-2">Cardápio</a>
+                <a href="/admin/pedidos" class="btn btn-outline-light btn-sm me-2 position-relative">
+                    Pedidos
+                    <span id="pedidosBadge"
+                        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                        style="display: none;">
+                        0
+                    </span>
+                </a>
+                <a href="/admin/motoboys" class="btn btn-outline-light btn-sm me-2">Motoboys</a>
+                <a href="/admin/cupons" class="btn btn-outline-light btn-sm me-2">Cupons</a>
+                <a href="/admin/promocoes" class="btn btn-outline-light btn-sm me-2">Promoções</a>
+                <a href="/admin/logs" class="btn btn-outline-light btn-sm me-2">Logs</a>
+                <a href="/admin/usuarios" class="btn btn-outline-light btn-sm me-2">Usuários</a>
+                <button class="btn btn-outline-light btn-sm me-2" onclick="openBannersModal()">🖼️ Banners</button>
+                {% if site_config.inventory_enabled %}
+                <a href="/admin/estoque" class="btn btn-warning btn-sm me-2 text-dark fw-bold">📦 Estoque</a>
+                {% endif %}
+                <a href="/admin/config" class="btn btn-outline-info btn-sm me-2">⚙️ Configurações</a>
+                <button class="btn btn-outline-warning btn-sm me-2" onclick="openPasswordModal()">Minha Conta</button>
+                <a href="/logout" class="btn btn-danger btn-sm">Sair</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row">
+            <!-- Gráfico de Barras (Pedidos por Dia) -->
+            <div class="col-md-8 mb-4">
+                <div class="card p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="m-0">📊 Pedidos por Dia</h4>
+                        <div class="d-flex gap-2 align-items-center">
+                            <button id="soundBtn" class="btn btn-outline-primary btn-sm" onclick="toggleSound()">
+                                🔇 Ativar Som
+                            </button>
+                            <div class="input-group input-group-sm" style="width: auto;">
+                                <span class="input-group-text">De</span>
+                                <input type="date" id="startDate" class="form-control" onchange="loadStats()">
+                                <span class="input-group-text">Até</span>
+                                <input type="date" id="endDate" class="form-control" onchange="loadStats()">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="position: relative; height: 400px; width: 100%;">
+                        <canvas id="ordersChart"></canvas>
+                    </div>
+                    <div class="mt-3 text-end">
+                        <a id="csvBtn" href="/api/admin/historico/csv" class="btn btn-success btn-sm">📥 Baixar CSV</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráfico de Pizza (Categorias) -->
+            <div class="col-md-4 mb-4">
+                <div class="card p-4 h-100">
+                    <h5 class="mb-4">🍕 Vendas por Categoria</h5>
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="categoriesChart"></canvas>
+                    </div>
+                    <p class="text-muted small mt-3 text-center">Baseado nos itens vendidos no período.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ranking de Clientes -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card p-4 h-100">
+                    <h5 class="mb-4">🏆 Top 5 Clientes Fiéis</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Telefone</th>
+                                    <th class="text-center">Pedidos</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topClientsTable">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráfico de Horários de Pico -->
+            <div class="col-md-6 mb-4">
+                <div class="card p-4 h-100">
+                    <h5 class="mb-4">⏰ Horários de Pico</h5>
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="peakHoursChart"></canvas>
+                    </div>
+                    <p class="text-muted small mt-3 text-center">Volume de pedidos por hora do dia.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Minha Conta (Trocar Senha) -->
+    <div id="passwordModal" class="modal" tabindex="-1" style="display: none; background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">🔐 Alterar Minha Senha</h5>
+                    <button type="button" class="btn-close" onclick="closePasswordModal()"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Senha Atual</label>
+                        <input type="password" id="currentPass" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nova Senha</label>
+                        <input type="password" id="newPass" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirmar Nova Senha</label>
+                        <input type="password" id="confirmPass" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closePasswordModal()">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="changePassword()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Configurações da Loja -->
+    <div id="configModal" class="modal" tabindex="-1" style="display: none; background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">⚙️ Configurações da Loja</h5>
+                    <button type="button" class="btn-close" onclick="closeConfigModal()"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="configForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nome Fantasia</label>
+                                <input type="text" id="confName" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">WhatsApp (Apenas números, com 55)</label>
+                                <input type="text" id="confWhats" class="form-control" placeholder="5511999999999">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Telefone Fixo</label>
+                                <input type="text" id="confPhone" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Endereço Principal</label>
+                                <input type="text" id="confAddress" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Instagram (URL)</label>
+                                <input type="text" id="confInsta" class="form-control"
+                                    placeholder="https://instagram.com/...">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Facebook (URL)</label>
+                                <input type="text" id="confFace" class="form-control"
+                                    placeholder="https://facebook.com/...">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Cor Primária</label>
+                                <input type="color" id="confColor" class="form-control form-control-color w-100"
+                                    value="#ffc107" title="Escolha a cor da marca">
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="confAiEnabled">
+                                    <label class="form-check-label" for="confAiEnabled">Ativar Assistente Virtual
+                                        (IA)</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <hr>
+                                <h6 class="text-warning">🍽️ Sistema Self-Service</h6>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-center">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="confSelfServiceEnabled">
+                                    <label class="form-check-label" for="confSelfServiceEnabled">Ativar Self-Service na
+                                        Home</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Dias e Horários (Ex: Seg a Sex, 11h às 15h)</label>
+                                <input type="text" id="confSelfServiceDays" class="form-control"
+                                    placeholder="Descreva os dias e horários">
+                            </div>
+
+                            <div class="col-12">
+                                <hr>
+                                <h6 class="text-warning">🍖 Rodízio de Carnes</h6>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-center">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="confRodizioCarneEnabled">
+                                    <label class="form-check-label" for="confRodizioCarneEnabled">Ativar Rodízio de
+                                        Carnes</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Dias e Horários</label>
+                                <input type="text" id="confRodizioCarneDays" class="form-control"
+                                    placeholder="Ex: Sexta a Domingo, a partir das 18h">
+                            </div>
+
+                            <div class="col-12">
+                                <hr>
+                                <h6 class="text-warning">🍕 Rodízio de Pizza</h6>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-center">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="confRodizioPizzaEnabled">
+                                    <label class="form-check-label" for="confRodizioPizzaEnabled">Ativar Rodízio de
+                                        Pizza</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Dias e Horários</label>
+                                <input type="text" id="confRodizioPizzaDays" class="form-control"
+                                    placeholder="Ex: Todos os dias">
+                            </div>
+
+                            <div class="col-12">
+                                <hr>
+                                <label class="form-label">Logotipo (Opcional)</label>
+                                <div class="d-flex align-items-center gap-3">
+                                    <img id="confLogoPreview" src=""
+                                        style="max-height: 60px; display: none; border: 1px solid #ccc; padding: 2px; border-radius: 5px;">
+                                    <input type="file" id="confLogo" class="form-control" accept="image/*">
+                                    <input type="hidden" id="confLogoUrl">
+                                </div>
+                            </div>
+
+                            <div class="col-12 mt-4">
+                                <h6>📍 Gerenciar Unidades</h6>
+                                <p class="text-muted small">Adicione as unidades da pizzaria. Use "Buscar Coordenadas"
+                                    para preencher Lat/Lon automaticamente.</p>
+
+                                <!-- Lista de Unidades -->
+                                <div class="table-responsive mb-3 border rounded">
+                                    <table class="table table-sm table-striped m-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Nome</th>
+                                                <th>Endereço</th>
+                                                <th style="width: 100px;">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="unitsTableBody">
+                                            <!-- Preenchido via JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-success"
+                                    onclick="showAddUnitForm()">+ Nova Unidade</button>
+
+                                <!-- Formulário de Edição/Criação de Unidade (Escondido por padrão) -->
+                                <div id="unitFormContainer" class="card mt-3 p-3 bg-light border"
+                                    style="display: none;">
+                                    <h6 id="unitFormTitle">Nova Unidade</h6>
+                                    <input type="hidden" id="unitIndex"> <!-- -1 para novo -->
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label small">Nome da Unidade</label>
+                                            <input type="text" id="unitName" class="form-control form-control-sm">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small">Telefone</label>
+                                            <input type="text" id="unitPhone" class="form-control form-control-sm">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label small">Endereço Completo (Rua, Número, Bairro,
+                                                Cidade)</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" id="unitAddress" class="form-control"
+                                                    placeholder="Ex: Rua X, 123 - Itaquera, SP">
+                                                <button class="btn btn-outline-primary" type="button"
+                                                    onclick="geocodeAddress()">📍 Buscar Coordenadas</button>
+                                            </div>
+                                            <small class="text-danger" id="geoError" style="display:none;"></small>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small">Latitude</label>
+                                            <input type="text" id="unitLat" class="form-control form-control-sm"
+                                                placeholder="-23.xxxxx">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small">Longitude</label>
+                                            <input type="text" id="unitLon" class="form-control form-control-sm"
+                                                placeholder="-46.xxxxx">
+                                        </div>
+                                        <div class="col-12 mt-2 d-flex justify-content-end gap-2">
+                                            <button type="button" class="btn btn-sm btn-secondary"
+                                                onclick="hideUnitForm()">Cancelar</button>
+                                            <button type="button" class="btn btn-sm btn-primary"
+                                                onclick="saveUnitLocal()">Salvar Unidade</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeConfigModal()">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="saveConfig()">Salvar Alterações</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Gerenciar Banners -->
+    <div id="bannersModal" class="modal" tabindex="-1" style="display: none; background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">🖼️ Banners da Home</h5>
+                    <button type="button" class="btn-close" onclick="closeBannersModal()"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="bannersList" class="mb-4">
+                        <!-- Lista de Banners via JS -->
+                    </div>
+
+                    <hr>
+                    <h6>Adicionar Novo Banner</h6>
+                    <form id="newBannerForm" onsubmit="event.preventDefault(); addBanner();">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <input type="text" id="banTitle" class="form-control form-control-sm"
+                                    placeholder="Título Principal" required>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="text" id="banSub" class="form-control form-control-sm"
+                                    placeholder="Subtítulo">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" id="banLinkTxt" class="form-control form-control-sm"
+                                    placeholder="Texto Botão (Ex: Ver Cardápio)">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" id="banLinkUrl" class="form-control form-control-sm"
+                                    placeholder="Link (Ex: /cardapio)">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="file" id="banImg" class="form-control form-control-sm" accept="image/*"
+                                    required>
+                            </div>
+                            <div class="col-12 mt-2">
+                                <button type="submit" class="btn btn-success btn-sm w-100">Adicionar Banner</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Elemento de Áudio -->
+    <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+        preload="auto"></audio>
+
+    <script>
+        let chartInstance = null;
+        let pieChartInstance = null;
+        let peakChartInstance = null;
+        let soundEnabled = false;
+        let lastCount = null;
+
+        async function loadStats() {
+            const start = document.getElementById('startDate').value;
+            const end = document.getElementById('endDate').value;
+
+            let url = '/api/admin/stats';
+            let csvUrl = '/api/admin/historico/csv';
+
+            if (start && end) {
+                const query = `?start=${start}&end=${end}`;
+                url += query;
+                csvUrl += query;
+            }
+
+            document.getElementById('csvBtn').href = csvUrl;
+
+            const res = await fetch(url);
+            const data = await res.json();
+
+            const ctx = document.getElementById('ordersChart').getContext('2d');
+
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Quantidade de Pedidos',
+                        data: data.values,
+                        backgroundColor: '#0d6efd',
+                        borderRadius: 5,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            // Carrega Gráfico de Pizza
+            const resCat = await fetch(url.replace('stats', 'stats/categories'));
+            const dataCat = await resCat.json();
+
+            const ctxPie = document.getElementById('categoriesChart').getContext('2d');
+            if (pieChartInstance) pieChartInstance.destroy();
+
+            pieChartInstance = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: dataCat.labels,
+                    datasets: [{
+                        data: dataCat.values,
+                        backgroundColor: [
+                            '#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff', '#ff9f40'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+
+            // Carrega Top Clientes
+            loadTopClients();
+
+            // Carrega Gráfico de Horários de Pico
+            const resPeak = await fetch(url.replace('stats', 'stats/peak_hours'));
+            const dataPeak = await resPeak.json();
+
+            const ctxPeak = document.getElementById('peakHoursChart').getContext('2d');
+            if (peakChartInstance) peakChartInstance.destroy();
+
+            peakChartInstance = new Chart(ctxPeak, {
+                type: 'line',
+                data: {
+                    labels: dataPeak.labels,
+                    datasets: [{
+                        label: 'Pedidos',
+                        data: dataPeak.values,
+                        borderColor: '#fd7e14',
+                        backgroundColor: 'rgba(253, 126, 20, 0.2)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundBtn');
+            const audio = document.getElementById('notifSound');
+
+            if (soundEnabled) {
+                btn.innerHTML = '🔊 Som Ativo';
+                btn.classList.remove('btn-outline-primary');
+                btn.classList.add('btn-primary');
+                audio.play().catch(() => { }); // Desbloqueia áudio
+            } else {
+                btn.innerHTML = '🔇 Ativar Som';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-primary');
+            }
+        }
+
+        async function checkNewOrders() {
+            try {
+                const res = await fetch('/api/admin/pedidos/count');
+                const data = await res.json();
+                const badge = document.getElementById('pedidosBadge');
+                if (data.count > 0) {
+                    badge.innerText = data.count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+
+                // Toca som se houver novos pedidos (contagem aumentou)
+                if (lastCount !== null && data.count > lastCount && soundEnabled) {
+                    const audio = document.getElementById('notifSound');
+                    audio.currentTime = 0;
+                    audio.play().catch(e => console.log("Erro som:", e));
+                }
+                lastCount = data.count;
+            } catch (e) { }
+        }
+
+        async function loadTopClients() {
+            const start = document.getElementById('startDate').value;
+            const end = document.getElementById('endDate').value;
+
+            let url = '/api/admin/stats/clients';
+            if (start && end) {
+                url += `?start=${start}&end=${end}`;
+            }
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+
+                const tbody = document.getElementById('topClientsTable');
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Sem dados no período.</td></tr>';
+                    return;
+                }
+
+                data.forEach((client, index) => {
+                    let medal = '';
+                    if (index === 0) medal = '🥇 ';
+                    if (index === 1) medal = '🥈 ';
+                    if (index === 2) medal = '🥉 ';
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${medal}<strong>${client.name}</strong></td>
+                        <td>${client.phone}</td>
+                        <td class="text-center"><span class="badge bg-primary rounded-pill">${client.count}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        function exportChart(type) {
+            if (!chartInstance) return;
+
+            if (type === 'png') {
+                const a = document.createElement('a');
+                a.href = chartInstance.toBase64Image();
+                a.download = 'grafico_pedidos.png';
+                a.click();
+            } else if (type === 'json') {
+                const data = {
+                    labels: chartInstance.data.labels,
+                    values: chartInstance.data.datasets[0].data
+                };
+                const jsonString = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonString], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'dados_grafico.json';
+                a.click();
+            }
+        }
+
+        // Funções do Modal de Senha
+        function openPasswordModal() {
+            document.getElementById('passwordModal').style.display = 'block';
+            document.getElementById('passwordModal').classList.add('show');
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').style.display = 'none';
+            document.getElementById('passwordModal').classList.remove('show');
+            document.getElementById('currentPass').value = '';
+            document.getElementById('newPass').value = '';
+            document.getElementById('confirmPass').value = '';
+        }
+
+        async function changePassword() {
+            const current = document.getElementById('currentPass').value;
+            const newP = document.getElementById('newPass').value;
+            const confirmP = document.getElementById('confirmPass').value;
+
+            if (newP !== confirmP) { alert('A nova senha e a confirmação não conferem.'); return; }
+            if (!current || !newP) { alert('Preencha todos os campos.'); return; }
+            if (newP.length < 6) { alert('A nova senha deve ter no mínimo 6 caracteres.'); return; }
+
+            const res = await fetch('/api/admin/change_password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ current_password: current, new_password: newP })
+            });
+            const data = await res.json();
+            alert(data.success ? 'Senha alterada com sucesso!' : 'Erro: ' + data.message);
+            if (data.success) closePasswordModal();
+        }
+
+        // Funções do Modal de Configuração
+        function openConfigModal() {
+            fetch('/api/config/geral')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('confName').value = data.nome_fantasia || '';
+                    document.getElementById('confWhats').value = data.whatsapp || '';
+                    document.getElementById('confPhone').value = data.telefone || '';
+                    document.getElementById('confAddress').value = data.endereco_principal || '';
+                    document.getElementById('confColor').value = data.cor_primaria || '#ffc107';
+                    document.getElementById('confInsta').value = data.instagram || '';
+                    document.getElementById('confFace').value = data.facebook || '';
+                    document.getElementById('confInsta').value = data.instagram || '';
+                    document.getElementById('confFace').value = data.facebook || '';
+                    document.getElementById('confAiEnabled').checked = data.ai_enabled !== false;
+
+                    // Self-Service
+                    document.getElementById('confSelfServiceEnabled').checked = data.self_service_enabled === true;
+                    document.getElementById('confSelfServiceDays').value = data.self_service_days || '';
+
+                    // Rodízio Carne
+                    document.getElementById('confRodizioCarneEnabled').checked = data.rodizio_carne_enabled === true;
+                    document.getElementById('confRodizioCarneDays').value = data.rodizio_carne_days || '';
+
+                    // Rodízio Pizza
+                    document.getElementById('confRodizioPizzaEnabled').checked = data.rodizio_pizza_enabled === true;
+                    document.getElementById('confRodizioPizzaDays').value = data.rodizio_pizza_days || '';
+
+                    document.getElementById('confLogoUrl').value = data.logo_url || '';
+                    const preview = document.getElementById('confLogoPreview');
+                    if (data.logo_url) {
+                        preview.src = data.logo_url;
+                        preview.style.display = 'block';
+                    } else {
+                        preview.style.display = 'none';
+                    }
+                    document.getElementById('confLogo').value = '';
+
+                    // Formata o JSON de unidades para ficar legível
+                    unitsList = data.units || [];
+                    renderUnitsTable();
+                    hideUnitForm();
+
+                    document.getElementById('configModal').style.display = 'block';
+                    document.getElementById('configModal').classList.add('show');
+                });
+        }
+
+        function closeConfigModal() {
+            document.getElementById('configModal').style.display = 'none';
+            document.getElementById('configModal').classList.remove('show');
+        }
+
+        async function saveConfig() {
+            try {
+                // unitsList já está atualizada localmente
+
+                let logoUrl = document.getElementById('confLogoUrl').value;
+                const logoFile = document.getElementById('confLogo').files[0];
+
+                if (logoFile) {
+                    const formData = new FormData();
+                    formData.append('file', logoFile);
+                    try {
+                        const uploadRes = await fetch('/api/admin/upload/image', { method: 'POST', body: formData });
+                        const uploadData = await uploadRes.json();
+                        if (uploadData.success) {
+                            logoUrl = uploadData.url;
+                        } else {
+                            alert('Erro ao enviar logo: ' + uploadData.message);
+                            return;
+                        }
+                    } catch (e) { alert('Erro de conexão no upload.'); return; }
+                }
+
+                const data = {
+                    nome_fantasia: document.getElementById('confName').value,
+                    whatsapp: document.getElementById('confWhats').value,
+                    telefone: document.getElementById('confPhone').value,
+                    endereco_principal: document.getElementById('confAddress').value,
+                    cor_primaria: document.getElementById('confColor').value,
+                    instagram: document.getElementById('confInsta').value,
+                    facebook: document.getElementById('confFace').value,
+                    ai_enabled: document.getElementById('confAiEnabled').checked,
+
+                    // Self-Service
+                    self_service_enabled: document.getElementById('confSelfServiceEnabled').checked,
+                    self_service_days: document.getElementById('confSelfServiceDays').value,
+
+                    // Rodízios
+                    rodizio_carne_enabled: document.getElementById('confRodizioCarneEnabled').checked,
+                    rodizio_carne_days: document.getElementById('confRodizioCarneDays').value,
+                    rodizio_pizza_enabled: document.getElementById('confRodizioPizzaEnabled').checked,
+                    rodizio_pizza_days: document.getElementById('confRodizioPizzaDays').value,
+
+                    logo_url: logoUrl,
+                    units: unitsList
+                };
+
+                const res = await fetch('/api/config/geral', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const respData = await res.json();
+                if (respData.success) {
+                    alert('Configurações salvas! Recarregue a página para ver as mudanças.');
+                    closeConfigModal();
+                } else {
+                    alert('Erro ao salvar.');
+                }
+            } catch (e) {
+                alert('Erro no formato do JSON das unidades. Verifique a sintaxe.');
+            }
+        }
+
+        // --- Lógica de Unidades ---
+        let unitsList = [];
+        let editingUnitIndex = -1;
+
+        function renderUnitsTable() {
+            const tbody = document.getElementById('unitsTableBody');
+            tbody.innerHTML = '';
+
+            if (unitsList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted small">Nenhuma unidade cadastrada.</td></tr>';
+                return;
+            }
+
+            unitsList.forEach((u, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${u.name}</td>
+                    <td><small>${u.address}</small></td>
+                    <td>
+                        <button type="button" class="btn btn-xs btn-outline-primary" onclick="editUnit(${idx})" title="Editar">✏️</button>
+                        <button type="button" class="btn btn-xs btn-outline-danger" onclick="deleteUnit(${idx})" title="Remover">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function showAddUnitForm() {
+            editingUnitIndex = -1;
+            document.getElementById('unitFormTitle').innerText = 'Nova Unidade';
+            document.getElementById('unitName').value = '';
+            document.getElementById('unitPhone').value = '';
+            document.getElementById('unitAddress').value = '';
+            document.getElementById('unitLat').value = '';
+            document.getElementById('unitLon').value = '';
+            document.getElementById('unitFormContainer').style.display = 'block';
+            document.getElementById('geoError').style.display = 'none';
+        }
+
+        function hideUnitForm() {
+            document.getElementById('unitFormContainer').style.display = 'none';
+        }
+
+        function editUnit(idx) {
+            editingUnitIndex = idx;
+            const u = unitsList[idx];
+            document.getElementById('unitFormTitle').innerText = 'Editar Unidade';
+            document.getElementById('unitName').value = u.name || '';
+            document.getElementById('unitPhone').value = u.phone || '';
+            document.getElementById('unitAddress').value = u.address || '';
+            document.getElementById('unitLat').value = u.lat || '';
+            document.getElementById('unitLon').value = u.lon || '';
+            document.getElementById('unitFormContainer').style.display = 'block';
+            document.getElementById('geoError').style.display = 'none';
+        }
+
+        function deleteUnit(idx) {
+            if (!confirm('Remover esta unidade?')) return;
+            unitsList.splice(idx, 1);
+            renderUnitsTable();
+        }
+
+        function saveUnitLocal() {
+            const name = document.getElementById('unitName').value;
+            const addr = document.getElementById('unitAddress').value;
+
+            if (!name || !addr) return alert('Nome e Endereço são obrigatórios.');
+
+            const newUnit = {
+                name: name,
+                address: addr,
+                phone: document.getElementById('unitPhone').value,
+                lat: parseFloat(document.getElementById('unitLat').value) || 0,
+                lon: parseFloat(document.getElementById('unitLon').value) || 0
+            };
+
+            if (editingUnitIndex === -1) {
+                unitsList.push(newUnit);
+            } else {
+                unitsList[editingUnitIndex] = newUnit;
+            }
+
+            hideUnitForm();
+            renderUnitsTable();
+        }
+
+        async function geocodeAddress() {
+            const addr = document.getElementById('unitAddress').value;
+            if (!addr) return alert('Preencha o endereço.');
+
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = 'Buscando...';
+            btn.disabled = true;
+            document.getElementById('geoError').style.display = 'none';
+
+            try {
+                // Busca restrita ao Brasil e formato JSON
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}&countrycodes=br&limit=1`);
+                const data = await res.json();
+
+                if (data && data.length > 0) {
+                    document.getElementById('unitLat').value = data[0].lat;
+                    document.getElementById('unitLon').value = data[0].lon;
+                } else {
+                    document.getElementById('geoError').innerText = 'Endereço não encontrado. Tente ser mais específico (Rua, Cidade).';
+                    document.getElementById('geoError').style.display = 'block';
+                }
+            } catch (e) {
+                alert('Erro na busca: ' + e.message);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function openBannersModal() {
+            fetch('/api/admin/banners')
+                .then(r => r.json())
+                .then(data => {
+                    banners = data;
+                    renderBanners();
+                    document.getElementById('bannersModal').style.display = 'block';
+                    document.getElementById('bannersModal').classList.add('show');
+                });
+        }
+
+        function closeBannersModal() {
+            document.getElementById('bannersModal').style.display = 'none';
+            document.getElementById('bannersModal').classList.remove('show');
+        }
+
+        function renderBanners() {
+            const container = document.getElementById('bannersList');
+            container.innerHTML = '';
+            if (banners.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">Nenhum banner cadastrado. O site usará o padrão.</p>';
+                return;
+            }
+            banners.forEach((b, idx) => {
+                const div = document.createElement('div');
+                div.className = 'd-flex align-items-center gap-3 border p-2 mb-2 rounded bg-light';
+                div.innerHTML = `
+                    <img src="${b.image}" style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px;">
+                    <div class="flex-grow-1">
+                        <strong>${b.title}</strong><br>
+                        <small>${b.subtitle}</small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeBanner(${idx})">🗑️</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function addBanner() {
+            const fileInput = document.getElementById('banImg');
+            if (!fileInput.files[0]) return alert('Selecione uma imagem');
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const upRes = await fetch('/api/admin/upload/image', { method: 'POST', body: formData });
+                const upData = await upRes.json();
+
+                if (upData.success) {
+                    const newBanner = {
+                        title: document.getElementById('banTitle').value,
+                        subtitle: document.getElementById('banSub').value,
+                        link_text: document.getElementById('banLinkTxt').value,
+                        link_url: document.getElementById('banLinkUrl').value,
+                        image: upData.url
+                    };
+                    banners.push(newBanner);
+                    await fetch('/api/admin/banners', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(banners) });
+                    renderBanners();
+                    document.getElementById('newBannerForm').reset();
+                } else alert('Erro no upload');
+            } catch (e) { alert('Erro ao salvar banner'); }
+        }
+
+        async function removeBanner(idx) {
+            if (!confirm('Remover este banner?')) return;
+            banners.splice(idx, 1);
+            await fetch('/api/admin/banners', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(banners) });
+            renderBanners();
+        }
+
+        loadStats();
+        checkNewOrders();
+        setInterval(checkNewOrders, 15000); // Verifica a cada 15s
+    </script>
+</body>
+
+</html>

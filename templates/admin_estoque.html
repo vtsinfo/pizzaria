@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estoque — Admin Colonial</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .admin-header {
+            background: #343a40;
+            color: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+        }
+
+        .admin-container {
+            padding-bottom: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="admin-header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <h3 class="m-0">🍕 Admin Colonial</h3>
+            <div>
+                <a href="/admin/dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+                {% if site_config.inventory_enabled %}
+                <a href="/admin/estoque" class="btn btn-warning btn-sm me-2 text-dark fw-bold">📦 Estoque</a>
+                {% endif %}
+                <a href="/admin" class="btn btn-outline-light btn-sm me-2">Cardápio</a>
+                <a href="/admin/pedidos" class="btn btn-outline-light btn-sm me-2">Pedidos</a>
+                <a href="/logout" class="btn btn-danger btn-sm">Sair</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container admin-container" id="stock-app">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>📦 Gestão de Estoque</h1>
+            <a href="/admin/dashboard" class="btn btn-outline-dark">
+                <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
+            </a>
+        </div>
+
+        <div class="row">
+            <!-- COLUNA 1: INGREDIENTES -->
+            <div class="col-md-7">
+                <div class="card bg-dark text-light border-warning mb-4">
+                    <div class="card-header border-warning d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-warning"><i class="fas fa-layer-group"></i> Ingredientes</h5>
+                        <button class="btn btn-sm btn-warning" @click="openModal('new')">
+                            <i class="fas fa-plus"></i> Novo Ingrediente
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text bg-secondary border-secondary text-light"><i
+                                    class="fas fa-search"></i></span>
+                            <input type="text" class="form-control bg-dark text-light border-secondary"
+                                placeholder="Buscar ingrediente..." v-model="search">
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Tipo</th>
+                                        <th>Unidade</th>
+                                        <th>Estoque</th>
+                                        <th>Mínimo</th>
+                                        <th>Custo (R$)</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="ing in filteredIngredientes" :key="ing.id"
+                                        :class="{'table-danger': ing.estoque_atual <= ing.estoque_minimo}"
+                                        title="Estoque Baixo" v-if="ing.estoque_atual <= ing.estoque_minimo">
+                                        <td>[[ ing.nome ]] <i class="fas fa-exclamation-triangle text-danger"
+                                                v-if="ing.estoque_atual <= ing.estoque_minimo"></i></td>
+                                        <td>
+                                            <span :class="getBadgeClass(ing.tipo)">[[ getTipoLabel(ing.tipo) ]]</span>
+                                        </td>
+                                        <td>[[ ing.unidade ]]</td>
+                                        <td>[[ ing.estoque_atual ]]</td>
+                                        <td>[[ ing.estoque_minimo ]]</td>
+                                        <td>[[ formatCurrency(ing.custo) ]]</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-info me-1"
+                                                @click="editIngrediente(ing)">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                @click="deleteIngrediente(ing)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-for="ing in filteredIngredientes" :key="ing.id"
+                                        v-if="ing.estoque_atual > ing.estoque_minimo">
+                                        <td>[[ ing.nome ]]</td>
+                                        <td>
+                                            <span :class="getBadgeClass(ing.tipo)">[[ getTipoLabel(ing.tipo) ]]</span>
+                                        </td>
+                                        <td>[[ ing.unidade ]]</td>
+                                        <td>[[ ing.estoque_atual ]]</td>
+                                        <td>[[ ing.estoque_minimo ]]</td>
+                                        <td>[[ formatCurrency(ing.custo) ]]</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-info me-1"
+                                                @click="editIngrediente(ing)">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                @click="deleteIngrediente(ing)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="filteredIngredientes.length === 0">
+                                        <td colspan="6" class="text-center text-muted">Nenhum ingrediente encontrado.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUNA 2: FICHA TÉCNICA -->
+            <div class="col-md-5">
+                <div class="card bg-dark text-light border-warning">
+                    <div class="card-header border-warning">
+                        <h5 class="mb-0 text-warning"><i class="fas fa-clipboard-list"></i> Ficha Técnica (Receita)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Selecione o Produto:</label>
+                            <select class="form-select bg-dark text-light border-secondary" v-model="selectedProduct"
+                                @change="loadRecipe">
+                                <option value="">-- Selecione --</option>
+                                {% for p in produtos %}
+                                <option value="{{ p.id }}">{{ p.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div v-if="selectedProduct">
+                            <div
+                                class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-2 mb-3">
+                                <h6 class="mb-0">Ingredientes da Receita</h6>
+                                <span class="badge bg-success bg-opacity-25 text-success border border-success"><i
+                                        class="fas fa-check-circle"></i> Salvo Automático</span>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-sm table-dark table-hover border-secondary">
+                                    <thead class="text-secondary small">
+                                        <tr>
+                                            <th>Ingrediente</th>
+                                            <th class="text-end">Qtd. Vinculada</th>
+                                            <th class="text-end" style="width: 50px;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="item in currentRecipe" :key="item.id">
+                                            <td><strong>[[ item.nome_ingrediente ]]</strong></td>
+                                            <td class="text-end">
+                                                <div class="input-group input-group-sm justify-content-end">
+                                                    <input type="number" step="0.001" style="max-width: 80px;"
+                                                        class="form-control form-control-sm bg-dark text-light border-secondary text-end"
+                                                        v-model="item.quantidade">
+                                                    <span
+                                                        class="input-group-text bg-secondary border-secondary text-light">[[
+                                                        item.unidade ]]</span>
+                                                    <button class="btn btn-outline-success"
+                                                        @click="updateRecipeItem(item)" title="Salvar Alteração">
+                                                        <i class="fas fa-save"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                            <td class="text-end">
+                                                <button class="btn btn-sm btn-outline-danger border-0"
+                                                    @click="removeFromRecipe(item)" title="Remover">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="currentRecipe.length === 0">
+                                            <td colspan="3" class="text-center text-muted py-3 small">
+                                                Nenhum ingrediente vinculado.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-top border-secondary">
+                                <h6><i class="fas fa-plus-circle text-warning"></i> Adicionar Ingrediente à Receita</h6>
+                                <div class="alert alert-info small py-2 mb-2" v-if="successMessage">
+                                    [[ successMessage ]]
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <select class="form-select form-select-sm bg-dark text-light border-secondary"
+                                            v-model="newRecipeItem.ingrediente_id">
+                                            <option value="">Selecione o Ingrediente...</option>
+                                            <option v-for="ing in ingredientes" :value="ing.id">[[ ing.nome ]] ([[
+                                                ing.unidade ]])</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-3">
+                                        <input type="number" step="0.001"
+                                            class="form-control form-control-sm bg-dark text-light border-secondary"
+                                            placeholder="Qtd" v-model="newRecipeItem.quantidade">
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-sm btn-warning w-100 fw-bold" @click="addToRecipe"
+                                            :disabled="!newRecipeItem.ingrediente_id || !newRecipeItem.quantidade || saving">
+                                            <span v-if="saving"><i class="fas fa-spinner fa-spin"></i></span>
+                                            <span v-else>Vincular</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="text-center text-muted py-5">
+                            <i class="fas fa-arrow-up fa-2x mb-2"></i><br>
+                            Selecione um produto para editar a receita.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL INGREDIENTE -->
+        <div class="modal fade" id="ingredienteModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content bg-dark text-light border-warning">
+                    <div class="modal-header border-warning">
+                        <h5 class="modal-title">[[ modalTitle ]]</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-8 mb-3">
+                                <label>Nome</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary"
+                                    v-model="tempIng.nome">
+                            </div>
+                            <div class="col-4 mb-3">
+                                <label>Tipo</label>
+                                <select class="form-select bg-dark text-light border-secondary" v-model="tempIng.tipo">
+                                    <option value="insumo">Insumo</option>
+                                    <option value="revenda">Revenda</option>
+                                    <option value="ambos">Ambos</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label>Unidade</label>
+                                <select class="form-select bg-dark text-light border-secondary"
+                                    v-model="tempIng.unidade">
+                                    <option value="kg">Quilos (kg)</option>
+                                    <option value="g">Gramas (g)</option>
+                                    <option value="l">Litros (l)</option>
+                                    <option value="ml">Mililitros (ml)</option>
+                                    <option value="un">Unidade (un)</option>
+                                </select>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label>Custo Unitário (R$)</label>
+                                <input type="number" step="0.01"
+                                    class="form-control bg-dark text-light border-secondary" v-model="tempIng.custo">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label>Estoque Atual</label>
+                                <input type="number" step="0.001"
+                                    class="form-control bg-dark text-light border-secondary"
+                                    v-model="tempIng.estoque_atual">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label>Estoque Mínimo (Alerta)</label>
+                                <input type="number" step="0.001"
+                                    class="form-control bg-dark text-light border-secondary"
+                                    v-model="tempIng.estoque_minimo">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-warning">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-warning" @click="saveIngrediente">Salvar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Vue.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script>
+        new Vue({
+            el: '#stock-app',
+            delimiters: ['[[', ']]'],
+            data: {
+                search: '',
+                ingredientes: [],
+                selectedProduct: '',
+                currentRecipe: [],
+                newRecipeItem: { ingrediente_id: '', quantidade: '' },
+                saving: false,
+                successMessage: '',
+
+                // Modal
+                tempIng: { id: null, nome: '', unidade: 'kg', tipo: 'insumo', estoque_atual: 0, estoque_minimo: 0, custo: 0 },
+                modalTitle: 'Novo Ingrediente',
+                modalInstance: null
+            },
+            computed: {
+                filteredIngredientes() {
+                    if (!this.search) return this.ingredientes;
+                    const term = this.search.toLowerCase();
+                    return this.ingredientes.filter(i => i.nome.toLowerCase().includes(term));
+                }
+            },
+            mounted() {
+                this.loadIngredientes();
+                // Inicializa Modal Bootstrap com check de segurança
+                const modalEl = document.getElementById('ingredienteModal');
+                if (modalEl && typeof bootstrap !== 'undefined') {
+                    this.modalInstance = new bootstrap.Modal(modalEl);
+                } else {
+                    console.error("Bootstrap não carregado ou modal não encontrado");
+                }
+            },
+            methods: {
+                formatCurrency(val) {
+                    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+                },
+                getBadgeClass(tipo) {
+                    const map = {
+                        'insumo': 'badge bg-primary',
+                        'revenda': 'badge bg-success',
+                        'ambos': 'badge bg-info text-dark'
+                    };
+                    return map[tipo] || 'badge bg-secondary';
+                },
+                getTipoLabel(tipo) {
+                    if (!tipo) return 'Insumo';
+                    return tipo.charAt(0).toUpperCase() + tipo.slice(1);
+                },
+                loadIngredientes() {
+                    fetch('/api/admin/ingredientes')
+                        .then(r => r.json())
+                        .then(data => this.ingredientes = data);
+                },
+                openModal(type) {
+                    if (type === 'new') {
+                        this.modalTitle = 'Novo Ingrediente';
+                        this.tempIng = { id: null, nome: '', unidade: 'kg', tipo: 'insumo', estoque_atual: 0, estoque_minimo: 0, custo: 0 };
+                    }
+                    if (this.modalInstance) this.modalInstance.show();
+                },
+                editIngrediente(ing) {
+                    this.modalTitle = 'Editar Ingrediente';
+                    this.tempIng = { ...ing }; // Clone
+                    if (this.modalInstance) this.modalInstance.show();
+                },
+                saveIngrediente() {
+                    fetch('/api/admin/ingredientes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.tempIng)
+                    })
+                        .then(r => r.json())
+                        .then(res => {
+                            if (res.success) {
+                                this.loadIngredientes();
+                                if (this.modalInstance) this.modalInstance.hide();
+                            } else {
+                                alert("Erro: " + res.message);
+                            }
+                        });
+                },
+                deleteIngrediente(ing) {
+                    if (!confirm(`Excluir ${ing.nome}?`)) return;
+
+                    fetch('/api/admin/ingredientes', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: ing.id })
+                    })
+                        .then(r => r.json())
+                        .then(res => {
+                            if (res.success) this.loadIngredientes();
+                            else alert("Erro: " + res.message);
+                        });
+                },
+
+                // --- FICHA TÉCNICA ---
+                loadRecipe() {
+                    if (!this.selectedProduct) {
+                        this.currentRecipe = [];
+                        return;
+                    }
+                    fetch(`/api/admin/receita/${this.selectedProduct}`)
+                        .then(r => r.json())
+                        .then(data => this.currentRecipe = data);
+                },
+                addToRecipe() {
+                    this.saving = true;
+                    this.successMessage = '';
+
+                    const payload = {
+                        produto_id: this.selectedProduct,
+                        ingrediente_id: this.newRecipeItem.ingrediente_id,
+                        quantidade: this.newRecipeItem.quantidade,
+                        action: 'add'
+                    };
+
+                    fetch('/api/admin/receita', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    })
+                        .then(r => r.json())
+                        .then(res => {
+                            this.saving = false;
+                            if (res.success) {
+                                this.loadRecipe();
+                                this.successMessage = 'Ingrediente vinculado com sucesso!';
+                                this.newRecipeItem.quantidade = '';
+                                this.newRecipeItem.ingrediente_id = '';
+
+                                // Limpa mensagem após 3 seg
+                                setTimeout(() => this.successMessage = '', 3000);
+                            } else {
+                                alert("Erro ao salvar: " + res.message);
+                            }
+                        })
+                        .catch(e => {
+                            this.saving = false;
+                            alert("Erro de conexão: " + e);
+                        });
+                },
+                removeFromRecipe(item) {
+                    if (!confirm("Remover ingrediente da receita?")) return;
+
+                    const payload = {
+                        produto_id: this.selectedProduct,
+                        ingrediente_id: item.ingrediente_id,
+                        quantidade: 0,
+                        action: 'remove'
+                    };
+
+                    fetch('/api/admin/receita', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    })
+                        .then(r => r.json())
+                        .then(res => {
+                            if (res.success) this.loadRecipe();
+                        });
+                },
+                updateRecipeItem(item) {
+                    // Reusa a lógica de adicionar para atualizar (upsert)
+                    const payload = {
+                        produto_id: this.selectedProduct,
+                        ingrediente_id: item.ingrediente_id,
+                        quantidade: item.quantidade,
+                        action: 'add'
+                    };
+
+                    this.successMessage = '';
+                    fetch('/api/admin/receita', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    })
+                        .then(r => r.json())
+                        .then(res => {
+                            if (res.success) {
+                                this.successMessage = 'Quantidade atualizada!';
+                                setTimeout(() => this.successMessage = '', 2000);
+                                this.loadRecipe();
+                            } else {
+                                alert("Erro: " + res.message);
+                            }
+                        });
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

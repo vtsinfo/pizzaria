@@ -1,0 +1,139 @@
+{
+    "Pizzas Salgadas": [
+        {
+            "nome": "Mussarela",
+            "desc": "Molho, mussarela e orégano",
+            "preco": "R$ 48,99"
+        },
+        {
+            "nome": "Calabresa",
+            "desc": "Molho, calabresa e cebola",
+            "preco": "R$ 48,99"
+        },
+        {
+            "nome": "Portuguesa",
+            "desc": "Presunto, ovos, ervilha e cebola",
+            "preco": "R$ 52,99"
+        },
+        {
+            "nome": "Marguerita",
+            "desc": "Mussarela, tomate e manjericão",
+            "preco": "R$ 49,99"
+        },
+        {
+            "nome": "Frango c/ Catupiry",
+            "desc": "Frango desfiado e catupiry original",
+            "preco": "R$ 54,99"
+        },
+        {
+            "nome": "Colonial",
+            "desc": "Frango, catupiry, bacon e milho",
+            "preco": "R$ 58,90"
+        },
+        {
+            "nome": "Quatro Queijos",
+            "desc": "Mussarela, provolone, parmesão e catupiry",
+            "preco": "R$ 55,90"
+        },
+        {
+            "nome": "Carne Seca",
+            "desc": "Carne seca, cebola e catupiry",
+            "preco": "R$ 62,90"
+        },
+        {
+            "nome": "Pepperoni",
+            "desc": "Mussarela e pepperoni",
+            "preco": "R$ 59,90"
+        }
+    ],
+    "Pizzas Doces": [
+        {
+            "nome": "Brigadeiro",
+            "desc": "Chocolate e granulado",
+            "preco": "R$ 45,90"
+        },
+        {
+            "nome": "Romeu e Julieta",
+            "desc": "Goiabada e mussarela",
+            "preco": "R$ 45,90"
+        },
+        {
+            "nome": "Prestígio",
+            "desc": "Chocolate e coco ralado",
+            "preco": "R$ 46,90"
+        }
+    ],
+    "Hambúrgueres": [
+        {
+            "nome": "X-Salada",
+            "desc": "Hambúrguer artesanal, queijo, alface e tomate",
+            "preco": "R$ 22,00"
+        },
+        {
+            "nome": "X-Bacon",
+            "desc": "Hambúrguer artesanal, queijo e muito bacon",
+            "preco": "R$ 26,00"
+        },
+        {
+            "nome": "Colonial Burger",
+            "desc": "Duplo burger, cheddar, bacon e cebola caramelizada",
+            "preco": "R$ 32,00"
+        }
+    ],
+    "Churrasco": [
+        {
+            "nome": "Espetinho de Carne",
+            "desc": "Acompanha farofa e vinagrete",
+            "preco": "R$ 12,00"
+        },
+        {
+            "nome": "Espetinho de Frango",
+            "desc": "Acompanha farofa",
+            "preco": "R$ 10,00"
+        },
+        {
+            "nome": "Misto Completo",
+            "desc": "Carne, Frango e Linguiça + Acompanhamentos",
+            "preco": "R$ 35,00"
+        }
+    ],
+    "Marmitex": [
+        {
+            "nome": "Executivo de Frango",
+            "desc": "Arroz, feijão, filé de frango e salada",
+            "preco": "R$ 24,99"
+        },
+        {
+            "nome": "Bife Acebolado",
+            "desc": "Arroz, feijão, bife acebolado e fritas",
+            "preco": "R$ 28,99"
+        },
+        {
+            "nome": "Feijoada (Qua/Sáb)",
+            "desc": "Completa com couve e farofa",
+            "preco": "R$ 35,00"
+        }
+    ],
+    "Bebidas": [
+        {
+            "nome": "Coca-Cola 2L",
+            "desc": "Garrafa",
+            "preco": "R$ 14,00"
+        },
+        {
+            "nome": "Guaraná 2L",
+            "desc": "Garrafa",
+            "preco": "R$ 12,00"
+        },
+        {
+            "nome": "Suco Del Valle",
+            "desc": "1 Litro (Uva/Pêssego)",
+            "preco": "R$ 10,00"
+        },
+        {
+            "nome": "Cerveja Heineken",
+            "desc": "Long Neck",
+            "preco": "R$ 9,00"
+        }
+    ]
+}

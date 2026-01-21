@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .admin-header {
+            background: #343a40;
+            color: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="admin-header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <h3 class="m-0">🍕 Admin Colonial</h3>
+            <div>
+                <a href="/admin/dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+                <a href="/admin" class="btn btn-outline-light btn-sm me-2">Cardápio</a>
+                <a href="/admin/pedidos" class="btn btn-outline-light btn-sm me-2">Pedidos</a>
+                <a href="/admin/motoboys" class="btn btn-light btn-sm me-2 fw-bold">Motoboys</a>
+                <a href="/admin/cupons" class="btn btn-outline-light btn-sm me-2">Cupons</a>
+                <a href="/admin/promocoes" class="btn btn-outline-light btn-sm me-2">Promoções</a>
+                <a href="/admin/logs" class="btn btn-outline-light btn-sm me-2">Logs</a>
+                <a href="/admin/usuarios" class="btn btn-outline-light btn-sm me-2">Usuários</a>
+                <a href="/logout" class="btn btn-danger btn-sm">Sair</a>
+            </div>
+        </div>
+    </nav>
+
+    <div id="app" class="container">
+        {% raw %}
+        <div class="card p-4">
+            <h4>Gerenciar Motoboys</h4>
+            <p class="text-muted">Cadastre os entregadores para vincular aos pedidos.</p>
+
+            <form @submit.prevent="addMotoboy" class="row g-3 align-items-end mb-4 border-bottom pb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Nome</label>
+                    <input type="text" class="form-control" v-model="newMotoboy.name" required
+                        placeholder="Ex: João Silva">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Telefone</label>
+                    <input type="text" class="form-control" v-model="newMotoboy.phone" placeholder="(11) 99999-9999">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Placa (Opcional)</label>
+                    <input type="text" class="form-control" v-model="newMotoboy.plate" placeholder="ABC-1234">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-success w-100">Adicionar</button>
+                </div>
+            </form>
+
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Telefone</th>
+                        <th>Placa</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(motoboy, index) in motoboys" :key="index">
+                        <td>{{ motoboy.name }}</td>
+                        <td>{{ motoboy.phone || '-' }}</td>
+                        <td><span class="badge bg-secondary">{{ motoboy.plate || 'N/A' }}</span></td>
+                        <td class="text-end">
+                            <button class="btn btn-outline-danger btn-sm" @click="removeMotoboy(index)">Excluir</button>
+                        </td>
+                    </tr>
+                    <tr v-if="motoboys.length === 0">
+                        <td colspan="4" class="text-center text-muted py-3">Nenhum motoboy cadastrado.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% endraw %}
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    motoboys: [],
+                    newMotoboy: { name: '', phone: '', plate: '' }
+                }
+            },
+            mounted() {
+                this.fetchMotoboys();
+            },
+            methods: {
+                async fetchMotoboys() {
+                    const res = await fetch('/api/admin/motoboys');
+                    this.motoboys = await res.json();
+                },
+                async addMotoboy() {
+                    if (!this.newMotoboy.name) return;
+                    this.motoboys.push({ ...this.newMotoboy });
+                    await this.saveMotoboys();
+                    this.newMotoboy = { name: '', phone: '', plate: '' };
+                },
+                async removeMotoboy(index) {
+                    if (confirm('Remover este motoboy?')) {
+                        this.motoboys.splice(index, 1);
+                        await this.saveMotoboys();
+                    }
+                },
+                async saveMotoboys() {
+                    await fetch('/api/admin/motoboys', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.motoboys)
+                    });
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>

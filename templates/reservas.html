@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="py-5 mt-5">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 text-center mb-5 reveal">
+                <h1 class="display-3 fw-bold text-warning" style="font-family: 'Playfair Display', serif;">Reservas</h1>
+                <p class="text-secondary lead">Garanta seu lugar no melhor rodízio da região. Preencha os dados abaixo e
+                    aguarde nossa confirmação.</p>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8 reveal">
+                <div class="card-gourmet p-4 p-md-5">
+                    <form action="{{ url_for('reservas') }}" method="POST">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small fw-bold">NOME COMPLETO</label>
+                                <input type="text" name="nome"
+                                    class="form-control bg-dark text-white border-secondary rounded-3 p-3" required
+                                    placeholder="Ex: João Silva">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small fw-bold">WHATSAPP</label>
+                                <input type="tel" name="whatsapp"
+                                    class="form-control bg-dark text-white border-secondary rounded-3 p-3" required
+                                    placeholder="(11) 99999-9999">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-secondary small fw-bold">DATA</label>
+                                <input type="date" name="data"
+                                    class="form-control bg-dark text-white border-secondary rounded-3 p-3" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-secondary small fw-bold">HORÁRIO</label>
+                                <select name="horario"
+                                    class="form-select bg-dark text-white border-secondary rounded-3 p-3" required>
+                                    <option value="18:00">18:00</option>
+                                    <option value="19:00">19:00</option>
+                                    <option value="20:00">20:00</option>
+                                    <option value="21:00">21:00</option>
+                                    <option value="22:00">22:00</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-secondary small fw-bold">PESSOAS</label>
+                                <input type="number" name="pessoas"
+                                    class="form-control bg-dark text-white border-secondary rounded-3 p-3" required
+                                    min="1" value="2">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-secondary small fw-bold">OBSERVAÇÕES (OPCIONAL)</label>
+                                <textarea name="obs"
+                                    class="form-control bg-dark text-white border-secondary rounded-3 p-3" rows="3"
+                                    placeholder="Ex: Comemoração de aniversário, mesa perto da janela..."></textarea>
+                            </div>
+                            <div class="col-12 text-center mt-4">
+                                <button type="submit"
+                                    class="btn btn-warning btn-lg rounded-pill px-5 py-3 fw-bold w-100 shadow">SOLICITAR
+                                    RESERVA</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

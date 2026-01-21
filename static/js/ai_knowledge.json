@@ -1,0 +1,33 @@
+{
+    "keywords": {
+        "cardápio|menu|opções|comida|fome|tem o que": "Temos Pizzas (doces e salgadas), Hambúrgueres Artesanais, Marmitex, Esfihas e Porções. Quer ver o cardápio completo?",
+        "pizza|sabores|sabor|quais pizzas": "São mais de 50 sabores! Temos as Clássicas (Mussarela, Calabresa), as Especiais (Carne Seca, Camarão) e as Doces (Nutella, prestígio). Posso te mostrar a lista?",
+        "rodízio|rodizio|buffet|comer a vontade": "Nosso rodízio é completo: Pizzas, Carnes, Buffet, Comida Japonesa e Sobremesas. Seg-Qui R$ 42,90 | Sex-Dom e Feriados R$ 45,90.",
+        "preço|valor|quanto custa|custa": "Pizzas a partir de R$ 48,99. Rodízio a partir de R$ 42,90. Marmitex a partir de R$ 24,99. Consulte a aba Cardápio para detalhes!",
+        "entrega|delivery|entregam|ifood|casa|pedir": "Entregamos sim! Por favor, digite seu **CEP** para eu verificar a unidade mais próxima e se atendemos sua região (raio de 6km).",
+        "taxa|frete|custo entrega|valor entrega": "A taxa de entrega varia conforme a distância (aprox. R$ 1,50/km + taxa fixa). Digite seu **CEP** para eu calcular o valor exato!",
+        "horário|aberto|fecha|funcionamento|hora": "Funcionamos todos os dias! Seg-Qui: 18h às 23h30 | Sex-Sáb: 18h às 00h | Dom: 18h às 23h30.",
+        "endereço|onde fica|localização|unidades|unidade": "Temos 4 unidades: Itaquera (Rua Virgínia Ferni), Cidade IV Centenário, Parque Paineiras e Guarulhos. Qual fica melhor para você?",
+        "telefone|contato|whatsapp|zap": "Nosso WhatsApp principal é (11) 91456-9028. Pode chamar para pedidos ou reservas!",
+        "reserva|reservar|mesa|lugar": "Você pode reservar sua mesa direto aqui pelo site na aba 'Reservas' ou pelo WhatsApp.",
+        "promoção|promoções|desconto|barato": "Temos pizzas promocionais (Calabresa, Baiana, Brócolis, etc) por R$ 49,99 e R$ 52,99. Confira no cardápio!",
+        "pagamento|cartão|pix|aceita": "Aceitamos Cartões de Crédito, Débito, PIX e Vale Refeição (Alelo, Sodexo, VR, Ticket).",
+        "borda|recheada|catupiry|cheddar": "Temos bordas recheadas sim! Opções: Catupiry, Cheddar, Chocolate (nas doces) e Coxinha. Acréscimo de R$ 12,00.",
+        "meia|metade|dois sabores": "Pode sim! Fazemos pizza meio a meio. O valor cobrado será o da pizza de maior valor.",
+        "vegetariana|vegano|sem carne": "Temos opções vegetarianas deliciosas, como Brócolis, Quatro Queijos, Marguerita e Palmito. Para veganos, podemos fazer sem queijo se preferir!",
+        "bebida|refri|coca|cerveja": "Temos Coca-Cola, Guaraná, Sucos Del Valle e Cervejas (Long Neck e Lata). Vai uma gelada?",
+        "oi|olá|bom dia|boa tarde|boa noite": [
+            "Olá! Bem-vindo à Pizzaria Colonial. Eu sou a assistente virtual. Deu fome aí? 🍕",
+            "Oi! Sou a IA da Colonial. Posso te ajudar com cardápio, reservas ou delivery?",
+            "E aí! Tudo bem? Vai uma pizza hoje? Como posso ajudar?"
+        ],
+        "obrigado|valeu|agradeço": [
+            "Por nada! Estamos à disposição. 🍕",
+            "De nada! Se bater a fome, é só chamar.",
+            "Disponha! Bom apetite!"
+        ],
+        "quem é você|ia|robô": "Sou a assistente virtual da Pizzaria Colonial! Estou aqui para anotar seu pedido, tirar dúvidas e te ajudar a comer bem. 😄",
+        "demora|tempo|espera": "Nosso tempo médio de entrega é de 40 a 50 minutos. No salão, o rodízio é imediato! 🚀"
+    },
+    "fallback": "Desculpe, ainda estou aprendendo sobre pizzas! 😅 Posso ajudar com Cardápio, Horários, Endereços ou Reservas. O que você precisa?"
+}

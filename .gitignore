@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+
+# Ambiente Virtual
+venv/
+.venv/
+env/
+
+# Banco de Dados e Logs (Opcional: comente se quiser sincronizar o banco, mas cuidado com conflitos)
+# instance/
+# *.db
+# *.sqlite3
+
+# Logs
+logs.json
+
+# Uploads (Geralmente não se versiona imagens de upload, mas depende do seu uso)
+# static/uploads/

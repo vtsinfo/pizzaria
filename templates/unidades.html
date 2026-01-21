@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<!-- Leaflet CSS (Mapa) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #map {
+        height: 600px;
+        width: 100%;
+        border-radius: 16px;
+        z-index: 1;
+    }
+
+    .unit-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+
+    .unit-card:hover {
+        transform: translateX(5px);
+        border-left-color: #ffc107;
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="py-5 mt-5">
+    <div class="container py-5">
+        <div class="text-center mb-5 reveal">
+            <h1 class="display-4 fw-bold text-warning" style="font-family: 'Playfair Display', serif;">Nossas Unidades
+            </h1>
+            <p class="text-secondary lead">Encontre a {{ site_config.nome_fantasia }} mais próxima de você.</p>
+        </div>
+
+        <div class="row g-4 reveal">
+            <!-- Lista de Unidades -->
+            <div class="col-lg-4">
+                <div class="d-flex flex-column gap-3" id="units-list" style="max-height: 600px; overflow-y: auto;">
+                    {% if site_config.units %}
+                    {% for unit in site_config.units %}
+                    <div class="card bg-dark border-secondary text-light unit-card shadow-sm"
+                        onclick="focusMap({{ unit.lat }}, {{ unit.lon }})">
+                        <div class="card-body">
+                            <h5 class="text-warning mb-2"><i class="bi bi-shop me-2"></i>{{ unit.name }}</h5>
+                            <p class="small text-secondary mb-1"><i class="bi bi-geo-alt me-2"></i>{{ unit.address }}
+                            </p>
+                            <p class="small text-secondary mb-0"><i class="bi bi-telephone me-2"></i>{{ unit.phone }}
+                            </p>
+                            <a href="https://www.google.com/maps/search/?api=1&query={{ unit.lat }},{{ unit.lon }}"
+                                target="_blank" class="btn btn-sm btn-outline-light mt-3 w-100">
+                                <i class="bi bi-map me-1"></i> Abrir no Google Maps
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="alert alert-warning">Nenhuma unidade cadastrada no momento.</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Mapa Interativo -->
+            <div class="col-lg-8">
+                <div id="map" class="shadow-lg border border-secondary"></div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    let map;
+
+    function initMap() {
+        // Carrega unidades do backend (Jinja para JSON)
+        const units = {{ site_config.units | tojson | default ('[]')
+    }};
+
+    // Define centro inicial (primeira unidade ou padrão SP)
+    let center = units.length > 0 ? [units[0].lat, units[0].lon] : [-23.5505, -46.6333];
+
+    map = L.map('map').setView(center, 13);
+
+    // Camada do Mapa (OpenStreetMap - Gratuito)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Adiciona Marcadores
+    units.forEach(unit => {
+        if (unit.lat && unit.lon) {
+            const marker = L.marker([unit.lat, unit.lon]).addTo(map);
+            marker.bindPopup(`
+                    <div style="text-align: center; color: #333;">
+                        <strong>${unit.name}</strong><br>
+                        <small>${unit.address}</small><br>
+                        <a href="tel:${unit.phone}" style="color: #0d6efd; text-decoration: none;">${unit.phone}</a>
+                    </div>
+                `);
+        }
+    });
+    }
+
+    // Função chamada ao clicar no card da unidade
+    function focusMap(lat, lon) {
+        if (map) {
+            map.flyTo([lat, lon], 16, {
+                animate: true,
+                duration: 1.5
+            });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', initMap);
+</script>
+{% endblock %}

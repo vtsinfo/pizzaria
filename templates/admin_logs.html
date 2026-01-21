@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .admin-header {
+            background: #343a40;
+            color: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="admin-header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <h3 class="m-0">🍕 Admin Colonial</h3>
+            <div>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-warning btn-sm me-2 fw-bold">Dashboard</a>
+                <a href="/admin/pedidos" class="btn btn-outline-light btn-sm me-2">Pedidos</a>
+                <a href="/admin/motoboys" class="btn btn-outline-light btn-sm me-2">Motoboys</a>
+                <a href="/logout" class="btn btn-danger btn-sm">Sair</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card p-4">
+            <h4 class="mb-4">📜 Log de Atividades</h4>
+            <div class="table-responsive">
+                <table class="table table-striped table-sm">
+                    <thead>
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Usuário</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td style="width: 180px;">{{ log.timestamp }}</td>
+                            <td style="width: 150px;" class="fw-bold">{{ log.user }}</td>
+                            <td>{{ log.action }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

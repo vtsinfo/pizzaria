@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .admin-header {
+            background: #343a40;
+            color: white;
+            padding: 15px 0;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: none;
+        }
+
+        /* Alerta de Pedido Atrasado */
+        .alert-late {
+            border-color: #dc3545 !important;
+            animation: pulse-red 2s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="admin-header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <h3 class="m-0">🍕 Admin Colonial</h3>
+            <div>
+                <a href="/admin/dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+                <a href="/admin" class="btn btn-outline-light btn-sm me-2">Cardápio</a>
+                <a href="/admin/pedidos" class="btn btn-light btn-sm me-2 fw-bold">Pedidos</a>
+                <a href="/admin/motoboys" class="btn btn-outline-light btn-sm me-2">Motoboys</a>
+                <a href="/admin/cupons" class="btn btn-outline-light btn-sm me-2">Cupons</a>
+                <a href="/admin/promocoes" class="btn btn-outline-light btn-sm me-2">Promoções</a>
+                <a href="/logout" class="btn btn-danger btn-sm">Sair</a>
+            </div>
+        </div>
+    </nav>
+
+    <div id="app" class="container pb-5">
+        {% raw %}
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="m-0">📋 Pedidos em Tempo Real</h4>
+            <div class="d-flex align-items-center bg-white p-2 rounded shadow-sm border">
+                <span class="small text-muted me-2">Tempo de Espera:</span>
+                <input type="text" class="form-control form-control-sm fw-bold text-center" style="width: 100px;"
+                    v-model="waitTime" @change="updateWaitTime" placeholder="Ex: 40 min">
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-warning btn-sm fw-bold" @click="reprintLastOrder"
+                    title="Reimprimir último pedido recebido">🖨️ Último</button>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn" :class="filter === 'all' ? 'btn-primary' : 'btn-outline-primary'"
+                        @click="setFilter('all')">Todos</button>
+                    <button class="btn" :class="filter === 'Entrega' ? 'btn-primary' : 'btn-outline-primary'"
+                        @click="setFilter('Entrega')">🛵 Entrega</button>
+                    <button class="btn" :class="filter === 'Retirada' ? 'btn-primary' : 'btn-outline-primary'"
+                        @click="setFilter('Retirada')">🏪 Retirada</button>
+                </div>
+                <button class="btn btn-outline-primary btn-sm" @click="enableSound">
+                    <span v-if="soundEnabled">🔊 Som Ativo</span>
+                    <span v-else>🔇 Ativar Som</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Elemento de Áudio -->
+        <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+            preload="auto"></audio>
+
+        <div v-if="loading" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+        </div>
+
+        <div v-else-if="filteredOrders.length === 0" class="alert alert-info text-center">
+            Nenhum pedido corresponde ao filtro selecionado.
+        </div>
+
+        <div v-else>
+            <div v-for="order in filteredOrders" :key="order.id" class="card mb-3 border-primary shadow-sm"
+                :class="{'alert-late': isLate(order)}">
+                <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                    <strong>#{{ order.id }} - {{ order.timestamp }} <span v-if="isLate(order)"
+                            class="badge bg-danger ms-2">⚠️ Atrasado (+10min)</span></strong>
+                    <span class="badge" :class="getStatusClass(order.status)">{{ order.status || 'Pendente' }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Dados do Cliente -->
+                        <div class="col-md-4 border-end">
+                            <h5 class="card-title text-primary">{{ order.customer }}</h5>
+                            <p class="card-text mb-1">📞 {{ order.phone }}</p>
+                            <p class="card-text mb-1">📍 <strong>{{ order.method }}:</strong> {{ order.address }}</p>
+                            <p v-if="order.obs" class="alert alert-warning p-2 mt-2 mb-0 small">📝 <strong>Obs:</strong>
+                                {{ order.obs }}</p>
+                        </div>
+
+                        <!-- Itens do Pedido -->
+                        <div class="col-md-4 border-end">
+                            <h6 class="text-muted">Itens:</h6>
+                            <ul class="list-group list-group-flush">
+                                <li v-for="(item, idx) in order.items" :key="idx" class="list-group-item p-1 border-0">
+                                    • {{ item.name }} <small class="text-muted">({{ item.price }})</small>
+                                </li>
+                            </ul>
+                            <div v-if="order.coupon" class="mt-2 text-success fw-bold small">
+                                🎟️ Cupom aplicado: {{ order.coupon }}
+                            </div>
+                        </div>
+
+                        <!-- Ações e Valores -->
+                        <div class="col-md-4">
+                            <label class="form-label small text-muted">Total (Editável):</label>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control fw-bold" v-model="order.total">
+                                <button class="btn btn-outline-secondary" type="button"
+                                    @click="updateTotal(order)">💾</button>
+                            </div>
+
+                            <div v-if="order.method === 'Entrega'" class="mb-3">
+                                <label class="form-label small text-muted">Motoboy:</label>
+                                <div class="input-group">
+                                    <select class="form-select" v-model="order.motoboy">
+                                        <option value="">Selecione...</option>
+                                        <option v-for="m in motoboysList" :value="m.name">{{ m.name }}</option>
+                                    </select>
+                                    <button class="btn btn-outline-secondary" type="button"
+                                        @click="updateMotoboy(order)">💾</button>
+                                </div>
+                            </div>
+
+                            <label class="form-label small text-muted">Status:</label>
+                            <select class="form-select mb-3" v-model="order.status" @change="updateStatus(order)">
+                                <option value="Pendente">Pendente</option>
+                                <option value="Em Preparo">Em Preparo</option>
+                                <option value="Saiu para Entrega">Saiu para Entrega</option>
+                                <option value="Pronto para Retirada">Pronto para Retirada</option>
+                            </select>
+
+                            <button class="btn btn-outline-dark w-100 mb-2" @click="printOrder(order)">🖨️ Imprimir
+                                Cupom</button>
+                            <button class="btn btn-success w-100" @click="concludeOrder(order.id)">✅ Concluir
+                                Pedido</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endraw %}
+    </div>
+
+    <!-- Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    orders: [],
+                    motoboysList: [],
+                    loading: true,
+                    soundEnabled: false,
+                    lastOrderId: null,
+                    interval: null,
+                    filter: 'all', // 'all', 'Entrega', 'Retirada'
+                    waitTime: ''
+                }
+            },
+            computed: {
+                filteredOrders() {
+                    if (this.filter === 'all') {
+                        return this.orders;
+                    }
+                    return this.orders.filter(order => order.method === this.filter);
+                },
+                pendingCount() {
+                    return this.orders.filter(o => o.status === 'Pendente' || !o.status).length;
+                }
+            },
+            mounted() {
+                this.fetchOrders();
+                this.fetchWaitTime();
+                this.fetchMotoboys();
+                // Polling a cada 10 segundos
+                this.interval = setInterval(this.fetchOrders, 10000);
+            },
+            methods: {
+                async fetchMotoboys() {
+                    try {
+                        const res = await fetch('/api/admin/motoboys');
+                        this.motoboysList = await res.json();
+                    } catch (e) { console.error(e); }
+                },
+                setFilter(newFilter) {
+                    this.filter = newFilter;
+                },
+                async fetchWaitTime() {
+                    const res = await fetch('/api/config/geral');
+                    const data = await res.json();
+                    this.waitTime = data.tempo_espera || '40-50 min';
+                },
+                async updateWaitTime() {
+                    await fetch('/api/config/geral', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tempo_espera: this.waitTime })
+                    });
+                },
+                async fetchOrders() {
+                    try {
+                        const res = await fetch('/api/admin/pedidos');
+                        const data = await res.json();
+
+                        // Verifica se há novo pedido para tocar som
+                        if (data.length > 0) {
+                            const newestId = data[0].id;
+                            if (this.lastOrderId && newestId !== this.lastOrderId && this.soundEnabled) {
+                                this.playSound();
+                            }
+                            this.lastOrderId = newestId;
+                        }
+
+                        this.orders = data;
+                        this.loading = false;
+                    } catch (e) { console.error(e); }
+                },
+                enableSound() {
+                    this.soundEnabled = !this.soundEnabled;
+                    if (this.soundEnabled) {
+                        // Toca um som mudo ou curto para desbloquear o áudio no navegador
+                        const audio = document.getElementById('notifSound');
+                        audio.play().catch(() => { });
+                    }
+                },
+                playSound() {
+                    const audio = document.getElementById('notifSound');
+                    audio.currentTime = 0;
+                    audio.play().catch(e => console.log("Erro ao tocar som:", e));
+                },
+                async updateStatus(order) {
+                    await fetch('/api/admin/pedido/status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: order.id, status: order.status })
+                    });
+                },
+                async updateTotal(order) {
+                    const res = await fetch('/api/admin/pedido/update_total', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: order.id, total: order.total })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert('Valor atualizado!');
+                    } else {
+                        alert('Erro: ' + data.message);
+                        this.fetchOrders(); // Reverte visualmente
+                    }
+                },
+                async updateMotoboy(order) {
+                    await fetch('/api/admin/pedido/motoboy', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: order.id, motoboy: order.motoboy })
+                    });
+                    alert('Motoboy definido!');
+                },
+                reprintLastOrder() {
+                    if (this.orders.length > 0) {
+                        this.printOrder(this.orders[0]);
+                    } else {
+                        alert("Nenhum pedido ativo para reimprimir.");
+                    }
+                },
+                printOrder(order) {
+                    const printWindow = window.open('', '_blank', 'width=350,height=600');
+                    const itemsHtml = order.items.map(item => `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>${item.name}</span>
+                            <span>${item.price}</span>
+                        </div>
+                    `).join('');
+
+                    const html = `
+                        <html>
+                        <head>
+                            <title>Pedido #${order.id}</title>
+                            <style>
+                                body { font-family: 'Courier New', monospace; font-size: 12px; width: 300px; margin: 0 auto; padding: 10px; }
+                                .header { text-align: center; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+                                .section { margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+                                .total { font-size: 16px; font-weight: bold; text-align: right; margin-top: 10px; }
+                                @media print { @page { margin: 0; } body { margin: 5px; } }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="header">
+                                <strong>PIZZARIA COLONIAL</strong><br>
+                                Pedido #${order.id}<br>
+                                ${order.timestamp}
+                            </div>
+                            <div class="section">
+                                <strong>Cliente:</strong> ${order.customer}<br>
+                                <strong>Tel:</strong> ${order.phone}<br>
+                                <strong>Tipo:</strong> ${order.method}<br>
+                                ${order.method === 'Entrega' ? `<strong>Endereço:</strong> ${order.address}<br>` : ''}
+                                ${order.motoboy ? `<strong>Motoboy:</strong> ${order.motoboy}<br>` : ''}
+                            </div>
+                            <div class="section">
+                                ${itemsHtml}
+                                ${order.method === 'Entrega' && order.fee ? `<div style="display: flex; justify-content: space-between; margin-top: 5px; border-top: 1px dotted #000; padding-top: 5px;">
+                                    <span>Taxa Entrega</span>
+                                    <span>${order.fee}</span>
+                                </div>` : ''}
+                            </div>
+                            ${order.obs ? `<div class="section"><strong>Obs:</strong> ${order.obs}</div>` : ''}
+                            <div class="total">
+                                Total: ${order.total}
+                            </div>
+                            <script>
+                                window.onload = function() { window.print(); setTimeout(function(){ window.close(); }, 500); }
+                            <\/script>
+                        </body>
+                        </html>
+                    `;
+                    printWindow.document.write(html);
+                    printWindow.document.close();
+                },
+                async concludeOrder(id) {
+                    if (!confirm('Deseja concluir e arquivar este pedido?')) return;
+                    await fetch('/api/admin/pedido/concluir', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: id })
+                    });
+                    this.fetchOrders(); // Atualiza lista
+                },
+                isLate(order) {
+                    if (order.status && order.status !== 'Pendente') return false;
+                    try {
+                        // Formato timestamp: "dd/mm/yyyy HH:MM:SS"
+                        const [datePart, timePart] = order.timestamp.split(' ');
+                        const [day, month, year] = datePart.split('/');
+                        const [hour, min, sec] = timePart.split(':');
+                        const orderDate = new Date(year, month - 1, day, hour, min, sec);
+                        const diff = (new Date() - orderDate) / 1000 / 60; // diferença em minutos
+                        return diff > 10;
+                    } catch (e) { return false; }
+                },
+                getStatusClass(status) {
+                    if (status === 'Saiu para Entrega' || status === 'Pronto para Retirada') return 'bg-info text-dark';
+                    if (status === 'Em Preparo') return 'bg-warning text-dark';
+                    return 'bg-secondary text-white';
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>

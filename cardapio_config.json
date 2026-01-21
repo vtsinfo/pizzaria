@@ -1,0 +1,26 @@
+{
+    "Bebidas": {
+        "show_price": false,
+        "visible": true
+    },
+    "Churrasco": {
+        "show_price": false,
+        "visible": true
+    },
+    "Hambúrgueres": {
+        "show_price": false,
+        "visible": true
+    },
+    "Marmitex": {
+        "show_price": false,
+        "visible": true
+    },
+    "Pizzas Doces": {
+        "show_price": false,
+        "visible": true
+    },
+    "Pizzas Salgadas": {
+        "show_price": false,
+        "visible": true
+    }
+}
