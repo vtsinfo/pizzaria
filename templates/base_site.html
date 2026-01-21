@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Pizzaria Colonial{% endblock %}</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <!-- CSS Global do Site -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: {
+                    {
+                    site_config.cor_primaria|default('#ffc107')
+                }
+            }
+
+            ;
+
+                {
+                % if site_config.theme=='light' %
+            }
+
+            /* Tema Claro */
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+            --chat-bg: #ffffff;
+            --chat-header-bg: #212529;
+            --chat-body-bg: #f8f9fa;
+            --chat-msg-bot: #e9ecef;
+            --chat-text: #212529;
+            --input-bg: #ffffff;
+            --input-border: #ddd;
+
+                {
+                % else %
+            }
+
+            /* Tema Escuro (Padrão) */
+            --bg-color: #212529;
+            --text-color: #f8f9fa;
+            --card-bg: #343a40;
+            --border-color: #495057;
+            --chat-bg: #343a40;
+            --chat-header-bg: #000000;
+            --chat-body-bg: #2b3035;
+            --chat-msg-bot: #495057;
+            --chat-text: #f8f9fa;
+            --input-bg: #212529;
+            --input-border: #495057;
+
+                {
+                % endif %
+            }
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        .navbar-custom {
+            background-color: var(--chat-header-bg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            color: var(--primary-color) !important;
+            font-size: 1.5rem;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+            transition: color 0.3s;
+            font-weight: 500;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--primary-color) !important;
+        }
+
+        .nav-link.active {
+            font-weight: bold;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        /* Footer */
+        footer {
+            background-color: #000;
+            color: #adb5bd;
+            padding: 40px 0 20px;
+            margin-top: auto;
+        }
+
+        footer h5 {
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        footer a {
+            color: #adb5bd;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            color: var(--primary-color);
+        }
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+
+    <!-- Navegação -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-pizza-slice"></i> {{ site_config.nome_fantasia }}
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.path == '/' }}" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.path == '/sobre' }}" href="/sobre">Sobre</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.path == '/cardapio' }}" href="/cardapio">Cardápio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.path == '/reservas' }}" href="/reservas">Reservas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.path == '/unidades' }}" href="/unidades">Unidades</a>
+                    </li>
+                    {% if site_config.online_ordering_enabled %}
+                    <li class="nav-item ms-lg-3">
+                        <a href="/cardapio" class="btn btn-warning fw-bold rounded-pill px-4 text-dark">
+                            <i class="fas fa-motorcycle"></i> Pedir Agora
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Rodapé -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5>Sobre Nós</h5>
+                    <p>{{ site_config.nome_fantasia }} oferece as melhores pizzas e pratos da região. Ingredientes
+                        selecionados e sabor inigualável.</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Contato</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fab fa-whatsapp me-2"></i> {{ site_config.whatsapp }}</li>
+                        <li class="mb-2"><i class="fas fa-phone-alt me-2"></i> {{ site_config.telefone }}</li>
+                        <li class="mb-2"><i class="fas fa-map-marker-alt me-2"></i> {{ site_config.endereco_principal }}
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Horário de Funcionamento</h5>
+                    <ul class="list-unstyled">
+                        <li>Seg - Qui: 18h às 23h30</li>
+                        <li>Sex - Sáb: 18h às 00h00</li>
+                        <li>Dom: 18h às 23h30</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="border-secondary">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <small>&copy; {{ 2024 }} {{ site_config.nome_fantasia }}. Todos os direitos reservados.</small>
+                <div>
+                    {% if site_config.instagram %}
+                    <a href="{{ site_config.instagram }}" target="_blank" class="me-3"><i
+                            class="fab fa-instagram fa-lg"></i></a>
+                    {% endif %}
+                    {% if site_config.facebook %}
+                    <a href="{{ site_config.facebook }}" target="_blank" class="me-3"><i
+                            class="fab fa-facebook fa-lg"></i></a>
+                    {% endif %}
+                    <a href="/login" title="Área Administrativa"><i class="fas fa-lock"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Botão Flutuante WhatsApp -->
+    {% if site_config.whatsapp %}
+    <a href="https://wa.me/{{ site_config.whatsapp }}" target="_blank" class="whatsapp-float" id="whatsapp-floating"
+        title="Fale conosco no WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+    {% endif %}
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script Global do Site (IA, Carrinho, etc) -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+    {% block scripts %}{% endblock %}
+
+    <!-- Widget de IA (Container) -->
+    {% if site_config.ai_enabled %}
+    <div id="ai-widget-container">
+        <button id="ai-toggle-btn" class="ai-toggle-btn">
+            <i class="fas fa-robot"></i>
+        </button>
+        <div class="ai-chat-window">
+            <div class="ai-header">
+                <span>Assistente Virtual</span>
+                <div>
+                    <button id="clear-ai-btn" title="Limpar conversa"><i class="fas fa-eraser"></i></button>
+                    <button id="close-ai-btn"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div id="ai-messages" class="ai-messages"></div>
+            <div class="ai-input-area">
+                <input type="text" id="ai-input" placeholder="Digite sua dúvida..." disabled>
+                <button id="ai-send-btn" disabled><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</body>
+
+</html>

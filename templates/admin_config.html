@@ -1,0 +1,115 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Configurações - Admin Colonial{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="m-0">⚙️ Configurações do Sistema</h4>
+    </div>
+
+    <form method="POST" action="{{ url_for('admin_config') }}">
+        <div class="row">
+            <!-- MÓDULOS -->
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0 text-primary"><i class="fas fa-puzzle-piece"></i> Módulos e Funcionalidades</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="inventory_enabled"
+                                name="inventory_enabled" {% if config.get('inventory_enabled') %}checked{% endif %}>
+                            <label class="form-check-label" for="inventory_enabled">
+                                <strong>Controle de Estoque (ERP)</strong><br>
+                                <small class="text-muted">Habilita menu de ingredientes e baixa automática.</small>
+                            </label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3 ms-4">
+                            <input class="form-check-input" type="checkbox" id="allow_negative_stock"
+                                name="allow_negative_stock" {% if config.get('allow_negative_stock') %}checked{% endif
+                                %}>
+                            <label class="form-check-label" for="allow_negative_stock">
+                                Permitir Estoque Negativo<br>
+                                <small class="text-muted">Se marcado, vendas continuam mesmo sem estoque.</small>
+                            </label>
+                        </div>
+
+                        <hr class="text-muted">
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="ai_enabled" name="ai_enabled" {% if
+                                config.get('ai_enabled') %}checked{% endif %}>
+                            <label class="form-check-label" for="ai_enabled">Assistente IA (Chat)</label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="self_service_enabled"
+                                name="self_service_enabled" {% if config.get('self_service_enabled') %}checked{% endif
+                                %}>
+                            <label class="form-check-label" for="self_service_enabled">Modo Self-Service
+                                (Almoço)</label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="rodizio_pizza_enabled"
+                                name="rodizio_pizza_enabled" {% if config.get('rodizio_pizza_enabled') %}checked{% endif
+                                %}>
+                            <label class="form-check-label" for="rodizio_pizza_enabled">Rodízio de Pizzas</label>
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="rodizio_carne_enabled"
+                                name="rodizio_carne_enabled" {% if config.get('rodizio_carne_enabled') %}checked{% endif
+                                %}>
+                            <label class="form-check-label" for="rodizio_carne_enabled">Rodízio de Carnes</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GERAL -->
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0 text-primary"><i class="fas fa-info-circle"></i> Informações Gerais</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Tempo de Espera (Exibido no site)</label>
+                            <input type="text" class="form-control" name="tempo_espera"
+                                value="{{ config.get('tempo_espera', '') }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Telefone de Contato</label>
+                            <input type="text" class="form-control" name="telefone"
+                                value="{{ config.get('telefone', '') }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">WhatsApp (Apenas números)</label>
+                            <input type="text" class="form-control" name="whatsapp"
+                                value="{{ config.get('whatsapp', '') }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Endereço Principal</label>
+                            <input type="text" class="form-control" name="endereco_principal"
+                                value="{{ config.get('endereco_principal', '') }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">História (Sobre Nós)</label>
+                            <textarea class="form-control" name="sobre_nos" rows="6"
+                                placeholder="Conte a história da pizzaria...">{{ config.get('sobre_nos', '') }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-end">
+            <button type="submit" class="btn btn-success btn-lg shadow"><i class="fas fa-save"></i> Salvar
+                Configurações</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+[
+    {
+        "password": "6aadfcc5f85db7261a6c772e1c16654a84af87a1f430f576bb61cc4e9be64462",
+        "permissions": [
+            "all"
+        ],
+        "role": "admin",
+        "username": "admin"
+    },
+    {
+        "password": "pizza123",
+        "permissions": [
+            "manage_menu"
+        ],
+        "role": "editor",
+        "username": "atende1"
+    }
+]

@@ -1,0 +1,316 @@
+/* Variáveis Globais (Fallback se não definido no HTML) */
+:root {
+    --primary-color: #ffc107;
+    --dark-bg: #212529;
+}
+
+/* --- Botão Flutuante do WhatsApp --- */
+.whatsapp-float {
+    position: fixed;
+    bottom: 90px;
+    left: 20px;
+    background-color: #25d366;
+    color: #fff;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    text-align: center;
+    font-size: 30px;
+    box-shadow: 2px 2px 3px #999;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: transform 0.3s;
+}
+
+.whatsapp-float:hover {
+    transform: scale(1.1);
+    color: #fff;
+}
+
+/* --- Widget de IA (Assistente Virtual) --- */
+#ai-widget-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1001;
+    font-family: 'Roboto', sans-serif;
+}
+
+.ai-toggle-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: #212529;
+    border: none;
+    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.5);
+    cursor: pointer;
+    font-size: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s;
+    z-index: 1002;
+    animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+    }
+}
+
+.ai-toggle-btn:hover {
+    transform: scale(1.1);
+}
+
+.ai-chat-window {
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: 350px;
+    height: 500px;
+    background-color: var(--chat-bg);
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    display: none;
+    /* Oculto por padrão */
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+#ai-widget-container.open .ai-chat-window {
+    display: flex;
+}
+
+.ai-header {
+    background-color: var(--chat-header-bg);
+    color: var(--primary-color);
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+}
+
+.ai-header button {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: 10px;
+}
+
+.ai-header button:hover {
+    color: var(--primary-color);
+}
+
+.ai-messages {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background-color: var(--chat-body-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ai-message {
+    max-width: 85%;
+    padding: 10px 15px;
+    border-radius: 15px;
+    font-size: 14px;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+.ai-message.bot {
+    background-color: var(--chat-msg-bot);
+    color: var(--chat-text);
+    align-self: flex-start;
+    border-bottom-left-radius: 2px;
+}
+
+.ai-message.user {
+    background-color: var(--primary-color);
+    color: #000;
+    align-self: flex-end;
+    border-bottom-right-radius: 2px;
+}
+
+.ai-input-area {
+    padding: 10px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 10px;
+    background-color: var(--chat-bg);
+}
+
+.ai-input-area input {
+    flex: 1;
+    padding: 8px 12px;
+    background-color: var(--input-bg);
+    color: var(--chat-text);
+    border: 1px solid var(--input-border);
+    border-radius: 20px;
+    outline: none;
+}
+
+.ai-input-area input:focus {
+    border-color: var(--primary-color);
+}
+
+.ai-input-area button {
+    background-color: var(--primary-color);
+    border: none;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    color: #000;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ai-input-area button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Chips de Sugestão (Perguntas Rápidas) */
+.ai-suggestions {
+    padding: 5px 15px;
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    white-space: nowrap;
+    background: var(--chat-body-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+.ai-chip {
+    background: var(--chat-bg);
+    border: 1px solid var(--border-color);
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--chat-text);
+    transition: all 0.2s;
+}
+
+.ai-chip:hover {
+    background: var(--primary-color);
+    color: #000;
+    border-color: var(--primary-color);
+}
+
+/* Animação de Digitação (...) */
+.typing-indicator {
+    background-color: var(--chat-msg-bot);
+    padding: 10px 15px;
+    border-radius: 15px;
+    align-self: flex-start;
+    display: flex;
+    gap: 5px;
+    width: fit-content;
+}
+
+.typing-indicator span {
+    width: 6px;
+    height: 6px;
+    background-color: #666;
+    border-radius: 50%;
+    display: inline-block;
+    animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+
+    0%,
+    80%,
+    100% {
+        transform: scale(0);
+    }
+
+    40% {
+        transform: scale(1);
+    }
+}
+
+/* Tooltips de Chamada para Ação (Balões flutuantes) */
+#whatsapp-cta-bubble,
+#ai-cta-bubble {
+    position: absolute;
+    bottom: 70px;
+    right: 0;
+    background: #333;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+#whatsapp-cta-bubble {
+    right: auto;
+    left: 0;
+}
+
+.tooltip-visible {
+    opacity: 1 !important;
+}
+
+/* Animação de Atenção (Tremer) */
+.attention-seeker {
+    animation: shake 0.82s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes shake {
+
+    10%,
+    90% {
+        transform: translate3d(-1px, 0, 0);
+    }
+
+    20%,
+    80% {
+        transform: translate3d(2px, 0, 0);
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    40%,
+    60% {
+        transform: translate3d(4px, 0, 0);
+    }
+}

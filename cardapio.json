@@ -1,0 +1,190 @@
+{
+    "Bebidas": [
+        {
+            "desc": "Garrafa",
+            "foto": "/static/uploads/bebida_coca_cola_1768845661724.png",
+            "nome": "Coca-Cola 2L",
+            "preco": "R$ 14,00",
+            "visivel": true
+        },
+        {
+            "desc": "Garrafa",
+            "foto": "/static/uploads/bebida_guarana_1768845684915.png",
+            "nome": "Guaraná 2L",
+            "preco": "R$ 12,00",
+            "visivel": true
+        },
+        {
+            "desc": "1 Litro (Uva/Pêssego)",
+            "foto": "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?auto=format&fit=crop&w=800&q=80",
+            "nome": "Suco Del Valle",
+            "preco": "R$ 10,00",
+            "visivel": true
+        },
+        {
+            "desc": "Latas e Long Necks (Consulte marcas)",
+            "foto": "https://images.unsplash.com/photo-1566633806327-68e152aaf26d?auto=format&fit=crop&w=800&q=80",
+            "nome": "Cervejas Variadas",
+            "preco": "R$ 9,00",
+            "visivel": true
+        }
+    ],
+    "Churrasco": [
+        {
+            "desc": "Acompanha farofa e vinagrete",
+            "foto": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",
+            "nome": "Espetinho de Carne",
+            "preco": "R$ 12,00",
+            "visivel": true
+        },
+        {
+            "desc": "Acompanha farofa",
+            "foto": "https://images.unsplash.com/photo-1633337667247-41876527b140?auto=format&fit=crop&w=800&q=80",
+            "nome": "Espetinho de Frango",
+            "preco": "R$ 10,00",
+            "visivel": true
+        },
+        {
+            "desc": "Carne, Frango e Linguiça + Acompanhamentos",
+            "foto": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
+            "nome": "Misto Completo",
+            "preco": "R$ 35,00",
+            "visivel": true
+        }
+    ],
+    "Hambúrgueres": [
+        {
+            "desc": "Hambúrguer artesanal, queijo, alface e tomate",
+            "foto": "/static/uploads/burger_x_salada_1768843472974.png",
+            "nome": "X-Salada",
+            "preco": "R$ 22,00",
+            "visivel": true
+        },
+        {
+            "desc": "Hambúrguer artesanal, queijo e muito bacon",
+            "esgotado": false,
+            "foto": "/static/uploads/burger_x_bacon_1768843489387.png",
+            "nome": "X-Bacon",
+            "preco": "R$ 26,00",
+            "visivel": true
+        },
+        {
+            "desc": "Duplo burger, cheddar, bacon e cebola caramelizada",
+            "foto": "/static/uploads/burger_colonial_1768843504241.png",
+            "nome": "Colonial Burger",
+            "preco": "R$ 32,00",
+            "visivel": true
+        }
+    ],
+    "Marmitex": [
+        {
+            "desc": "Arroz, feijão, filé de frango e salada",
+            "foto": "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=800&q=80",
+            "nome": "Executivo de Frango",
+            "preco": "R$ 24,99",
+            "visivel": true
+        },
+        {
+            "desc": "Arroz, feijão, bife acebolado e fritas",
+            "foto": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+            "nome": "Bife Acebolado",
+            "preco": "R$ 28,99",
+            "visivel": true
+        },
+        {
+            "desc": "Completa com couve e farofa",
+            "foto": "https://images.unsplash.com/photo-1588168333986-747da8dce640?auto=format&fit=crop&w=800&q=80",
+            "nome": "Feijoada (Qua/Sáb)",
+            "preco": "R$ 35,00",
+            "visivel": true
+        }
+    ],
+    "Pizzas Doces": [
+        {
+            "desc": "Chocolate e granulado",
+            "foto": "/static/uploads/pizza_brigadeiro_1768844853698.png",
+            "nome": "Brigadeiro",
+            "preco": "R$ 45,90",
+            "visivel": true
+        },
+        {
+            "desc": "Goiabada e mussarela",
+            "foto": "/static/uploads/pizza_romeu_julieta_1768844867572.png",
+            "nome": "Romeu e Julieta",
+            "preco": "R$ 45,90",
+            "visivel": true
+        },
+        {
+            "desc": "Chocolate e coco ralado",
+            "foto": "/static/uploads/pizza_prestigio_1768844884449.png",
+            "nome": "Prestígio",
+            "preco": "R$ 46,90",
+            "visivel": true
+        }
+    ],
+    "Pizzas Salgadas": [
+        {
+            "desc": "Molho, mussarela e orégano",
+            "foto": "/static/uploads/pizza_mussarela_1768843685763.png",
+            "nome": "Mussarela",
+            "preco": "R$ 48,99",
+            "visivel": true
+        },
+        {
+            "desc": "Molho, calabresa e cebola",
+            "foto": "/static/uploads/pizza_calabresa_1768843701219.png",
+            "nome": "Calabresa",
+            "preco": "R$ 48,99",
+            "visivel": true
+        },
+        {
+            "desc": "Presunto, ovos, ervilha e cebola",
+            "foto": "/static/uploads/pizza_portuguesa_1768843733557.png",
+            "nome": "Portuguesa",
+            "preco": "R$ 52,99",
+            "visivel": true
+        },
+        {
+            "desc": "Mussarela, tomate e manjericão",
+            "foto": "/static/uploads/pizza_marguerita_1768843792244.png",
+            "nome": "Marguerita",
+            "preco": "R$ 49,99",
+            "visivel": true
+        },
+        {
+            "desc": "Frango desfiado e catupiry original",
+            "foto": "/static/uploads/pizza_frango_catupiry_1768843807036.png",
+            "nome": "Frango c/ Catupiry",
+            "preco": "R$ 54,99",
+            "visivel": true
+        },
+        {
+            "desc": "Frango, catupiry, bacon e milho",
+            "foto": "/static/uploads/pizza_colonial_1768843832136.png",
+            "nome": "Colonial",
+            "preco": "R$ 58,90",
+            "visivel": true
+        },
+        {
+            "desc": "Mussarela, provolone, parmesão e catupiry",
+            "foto": "/static/uploads/pizza_quatro_queijos_1768844732810.png",
+            "nome": "Quatro Queijos",
+            "preco": "R$ 55,90",
+            "visivel": true
+        },
+        {
+            "desc": "Carne seca, cebola e catupiry",
+            "foto": "/static/uploads/pizza_carne_seca_1768844748065.png",
+            "nome": "Carne Seca",
+            "preco": "R$ 62,90",
+            "visivel": true
+        },
+        {
+            "desc": "Mussarela e pepperoni",
+            "foto": "/static/uploads/pizza_pepperoni_1768844762622.png",
+            "nome": "Pepperoni",
+            "preco": "R$ 59,90",
+            "visivel": true
+        }
+    ]
+}

@@ -1,0 +1,430 @@
+{% extends "base_admin.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container pb-5" id="app">
+    {% raw %}
+    <div v-if="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Carregando cardápio...</p>
+    </div>
+
+    <div v-else>
+        <!-- Área de Importação/Exportação -->
+        <div class="card p-3 mb-4 border-dashed bg-light">
+            <div class="d-flex gap-2 align-items-center">
+                <span class="fw-bold text-secondary me-2">Gestão em Massa:</span>
+                <a href="/admin/cardapio/template" class="btn btn-outline-success btn-sm">📥 Baixar Modelo Excel
+                    (CSV)</a>
+
+                <div class="vr"></div>
+
+                <select id="uploadMode" class="form-select form-select-sm w-auto-custom" title="Modo de Importação">
+                    <option value="merge">Mesclar (Manter existentes)</option>
+                    <option value="replace">Substituir TUDO</option>
+                </select>
+
+                <button class="btn btn-outline-primary btn-sm" onclick="document.getElementById('csvInput').click()">📤
+                    Importar Tabela Preenchida</button>
+                <input type="file" id="csvInput" accept=".csv" style="display: none" @change="uploadCSV">
+
+                <div class="vr"></div>
+                <button class="btn btn-outline-warning btn-sm" @click="restoreBackup">↺ Restaurar Backup</button>
+
+                <div class="vr"></div>
+                <div class="vr"></div>
+                <button class="btn btn-secondary btn-sm" @click="openConfigModal">⚙️ Configurar Exibição</button>
+                <a href="/api/cardapio/pdf" target="_blank" class="btn btn-danger btn-sm">📄 PDF</a>
+                <button class="btn btn-success btn-sm" @click="shareWhatsApp">📲 Enviar Zap</button>
+                <button class="btn btn-info btn-sm text-white" @click="showPreview = true">👁️ Preview</button>
+            </div>
+            <small class="text-muted mt-2 d-block">Baixe o modelo, edite no Excel mantendo o formato CSV (separado
+                por ponto e vírgula) e importe para atualizar preços e itens rapidamente.</small>
+        </div>
+
+        <!-- Loop de Categorias -->
+        <div v-for="(items, category) in menu" :key="category" class="category-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center flex-grow-1">
+                    <div v-if="editingCategory === category" class="input-group max-w-400">
+                        <input type="text" class="form-control form-control-lg text-primary fw-bold"
+                            v-model="tempCategoryName" @keyup.enter="saveCategoryName(category)"
+                            placeholder="Nome da categoria">
+                        <button class="btn btn-success" @click="saveCategoryName(category)">Salvar</button>
+                        <button class="btn btn-outline-secondary" @click="editingCategory = null">Cancelar</button>
+                    </div>
+                    <h3 v-else class="text-primary m-0 cursor-edit" @click="startEditCategory(category)"
+                        title="Clique para editar o nome">
+                        {{ category }} <small class="text-muted fs-6">✏️</small></h3>
+                </div>
+                <button class="btn btn-outline-danger btn-sm" @click="removeCategory(category)">Excluir
+                    Categoria</button>
+            </div>
+
+            <!-- Loop de Itens -->
+            <div v-for="(item, index) in items" :key="index" class="item-row row align-items-center g-2"
+                draggable="true" @dragstart="dragStart(category, index, $event)" @dragend="dragEnd" @dragover.prevent
+                @drop="drop(category, index)">
+                <div class="col-md-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="drag-handle" title="Arraste para reordenar">⣿</span>
+                        <input type="text" class="form-control form-control-sm" v-model="item.nome" placeholder="Nome">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control form-control-sm" v-model="item.desc" placeholder="Descrição">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" v-model="item.preco" placeholder="Preço">
+                    <div class="form-check form-switch mt-1">
+                        <input class="form-check-input" type="checkbox" v-model="item.esgotado"
+                            :id="'soldout-'+category+'-'+index">
+                        <label class="form-check-label small text-muted text-small-08"
+                            :for="'soldout-'+category+'-'+index">Esgotado</label>
+                    </div>
+                    <div class="form-check form-switch mt-1">
+                        <input class="form-check-input" type="checkbox" v-model="item.visivel"
+                            :id="'visible-'+category+'-'+index">
+                        <label class="form-check-label small text-muted text-small-08"
+                            :for="'visible-'+category+'-'+index">Mostrar no Site</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" v-model="item.foto" placeholder="URL Foto">
+                        <button class="btn btn-outline-secondary" type="button" @click="triggerFile(category, index)"
+                            title="Upload Foto">📷</button>
+                    </div>
+                    <input type="file" :id="'file-' + category + '-' + index" class="d-none" accept="image/*"
+                        @change="uploadImage($event, item)">
+                </div>
+                <div class="col-md-1 text-end">
+                    <button class="btn btn-danger btn-sm" @click="removeItem(category, index)">×</button>
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <button class="btn btn-outline-success btn-sm" @click="addItem(category)">+ Adicionar Item em {{
+                    category }}</button>
+            </div>
+        </div>
+
+        <!-- Adicionar Nova Categoria -->
+        <div class="card bg-light border-dashed mb-5">
+            <div class="card-body text-center">
+                <div class="input-group mx-auto max-w-400">
+                    <input type="text" class="form-control" v-model="newCategoryName"
+                        placeholder="Nome da Nova Categoria">
+                    <button class="btn btn-success" @click="addCategory">+ Criar Categoria</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Preview -->
+    <div v-if="showPreview" class="modal-overlay" @click.self="showPreview = false">
+        <div class="modal-content-custom">
+            <div class="preview-header">
+                <h5 class="m-0">📱 Visualização do Cliente (Preview)</h5>
+                <button class="btn-close btn-close-white" @click="showPreview = false"></button>
+            </div>
+            <div class="preview-body">
+                <div v-for="(items, category) in menu" :key="category" class="mb-4" v-if="isCategoryVisible(category)">
+                    <h4 class="text-warning bg-dark p-2 rounded mb-3">{{ category }}</h4>
+                    <div class="row g-3">
+                        <div v-for="item in items" class="col-md-6" v-if="item.visivel !== false">
+                            <div class="card h-100 shadow-sm border-0" :class="{'opacity-50': item.esgotado}">
+                                <div class="card-body d-flex gap-3 align-items-center">
+                                    <div class="position-relative">
+                                        <img :src="item.foto || 'https://placehold.co/100x100?text=Sem+Foto'"
+                                            class="bg-light img-preview-sm">
+                                        <span v-if="item.esgotado"
+                                            class="badge bg-danger position-absolute top-50 start-50 translate-middle shadow-sm text-small-07">ESGOTADO</span>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold mb-1">{{ item.nome }}</h6>
+                                        <p class="small text-muted mb-1 lh-sm">{{ item.desc }}</p>
+                                        <span class="badge" v-if="isPriceVisible(category)"
+                                            :class="item.esgotado ? 'bg-secondary' : 'bg-success'">{{ item.esgotado
+                                            ? 'Indisponível' : item.preco }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Configuração -->
+    <div v-if="showConfig" class="modal-overlay" @click.self="showConfig = false">
+        <div class="modal-content-custom max-w-600">
+            <div class="preview-header">
+                <h5 class="m-0">⚙️ Configurar Exibição no Site</h5>
+                <button class="btn-close btn-close-white" @click="showConfig = false"></button>
+            </div>
+            <div class="preview-body bg-white">
+                <p class="text-muted mb-4">Selecione quais categorias devem aparecer no cardápio online e se os
+                    preços devem ser exibidos.</p>
+
+                <div class="list-group">
+                    <div v-for="(config, category) in tempConfig" :key="category"
+                        class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">{{ category }}</span>
+                        <div class="d-flex gap-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" v-model="config.visible"
+                                    :id="'cat-vis-'+category">
+                                <label class="form-check-label" :for="'cat-vis-'+category">Visível</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" v-model="config.show_price"
+                                    :id="'cat-price-'+category">
+                                <label class="form-check-label" :for="'cat-price-'+category">Preço</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 text-end">
+                    <button class="btn btn-secondary me-2" @click="showConfig = false">Cancelar</button>
+                    <button class="btn btn-primary" @click="saveConfig">Salvar Configuração</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botão Flutuante de Salvar -->
+    <button class="btn btn-primary btn-save-float" @click="saveMenu">
+        💾 Salvar Alterações
+    </button>
+    {% endraw %}
+</div>
+
+<!-- Vue.js 3 (CDN) -->
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        data() {
+            return {
+                menu: {},
+                config: {},
+                tempConfig: {},
+                loading: true,
+                newCategoryName: '',
+                editingCategory: null,
+                tempCategoryName: '',
+                showPreview: false,
+                showConfig: false,
+                draggedItem: null
+            }
+        },
+        mounted() {
+            this.fetchMenu();
+            this.fetchConfig();
+        },
+        methods: {
+            async fetchMenu() {
+                try {
+                    const res = await fetch('/api/cardapio');
+                    this.menu = await res.json();
+                    // Inicializa visivel como true se não existir
+                    for (let cat in this.menu) {
+                        this.menu[cat].forEach(item => {
+                            if (item.visivel === undefined) item.visivel = true;
+                        });
+                    }
+                    this.loading = false;
+                } catch (e) {
+                    alert('Erro ao carregar cardápio');
+                }
+            },
+            async fetchConfig() {
+                try {
+                    const res = await fetch('/api/admin/config/cardapio');
+                    this.config = await res.json();
+                } catch (e) { console.error('Erro ao carregar configurações'); }
+            },
+            addItem(category) {
+                this.menu[category].push({ nome: '', desc: '', preco: 'R$ 0,00', visivel: true });
+            },
+            removeItem(category, index) {
+                if (confirm('Tem certeza que deseja remover este item?')) {
+                    this.menu[category].splice(index, 1);
+                }
+            },
+            addCategory() {
+                if (!this.newCategoryName) return;
+                if (this.menu[this.newCategoryName]) {
+                    alert('Categoria já existe!');
+                    return;
+                }
+                // Adiciona a nova categoria (reatividade do Vue 3 funciona direto)
+                this.menu[this.newCategoryName] = [];
+                this.newCategoryName = '';
+            },
+            removeCategory(category) {
+                if (confirm(`Tem certeza que deseja apagar a categoria "${category}" e todos os seus itens?`)) {
+                    delete this.menu[category];
+                }
+            },
+            startEditCategory(category) {
+                this.editingCategory = category;
+                this.tempCategoryName = category;
+            },
+            saveCategoryName(oldName) {
+                if (this.tempCategoryName && this.tempCategoryName !== oldName) {
+                    if (this.menu[this.tempCategoryName]) {
+                        alert('Já existe uma categoria com este nome!');
+                        return;
+                    }
+                    // Reconstrói o objeto para manter a ordem (opcional, mas bom para UX)
+                    const newMenu = {};
+                    for (const key in this.menu) {
+                        if (key === oldName) {
+                            newMenu[this.tempCategoryName] = this.menu[key];
+                        } else {
+                            newMenu[key] = this.menu[key];
+                        }
+                    }
+                    this.menu = newMenu;
+                }
+                this.editingCategory = null;
+            },
+            triggerFile(category, index) {
+                document.getElementById('file-' + category + '-' + index).click();
+            },
+            async uploadImage(event, item) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const res = await fetch('/api/admin/upload/image', { method: 'POST', body: formData });
+                    const data = await res.json();
+                    if (data.success) item.foto = data.url;
+                    else alert('Erro no upload');
+                } catch (e) { alert('Erro ao enviar imagem'); }
+            },
+            async saveMenu() {
+                try {
+                    const res = await fetch('/api/admin/save', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.menu)
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert('Cardápio salvo com sucesso! 🎉');
+                    } else {
+                        alert('Erro ao salvar: ' + data.message);
+                    }
+                } catch (e) {
+                    alert('Erro de conexão ao salvar.');
+                }
+            },
+            shareWhatsApp() {
+                // Gera o link para o PDF (assumindo que o site está online ou acessível)
+                const pdfLink = window.location.origin + '/api/cardapio/pdf';
+                const msg = `Olá! Confira nosso cardápio atualizado em PDF: ${pdfLink}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+            },
+            async uploadCSV(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const mode = document.getElementById('uploadMode').value;
+
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('mode', mode);
+
+                this.loading = true;
+                try {
+                    const res = await fetch('/api/admin/cardapio/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert(data.message);
+                        this.fetchMenu(); // Recarrega a tela
+                    } else {
+                        alert('Erro: ' + data.message);
+                        this.loading = false;
+                    }
+                } catch (e) {
+                    alert('Erro ao enviar arquivo.');
+                    this.loading = false;
+                }
+                event.target.value = ''; // Limpa o input
+            },
+            async restoreBackup() {
+                if (!confirm('Deseja restaurar a versão anterior do cardápio? Isso desfará a última importação.')) return;
+
+                this.loading = true;
+                try {
+                    const res = await fetch('/api/admin/cardapio/restore', { method: 'POST' });
+                    const data = await res.json();
+                    alert(data.message);
+                    if (data.success) this.fetchMenu();
+                    else this.loading = false;
+                } catch (e) {
+                    alert('Erro ao restaurar backup.');
+                    this.loading = false;
+                }
+            },
+            // Drag and Drop
+            dragStart(category, index, event) {
+                this.draggedItem = { category, index };
+                event.target.classList.add('dragging');
+            },
+            dragEnd(event) {
+                event.target.classList.remove('dragging');
+                this.draggedItem = null;
+            },
+            drop(targetCategory, targetIndex) {
+                if (!this.draggedItem) return;
+                const { category: sourceCategory, index: sourceIndex } = this.draggedItem;
+                if (sourceCategory === targetCategory && sourceIndex !== targetIndex) {
+                    const item = this.menu[sourceCategory].splice(sourceIndex, 1)[0];
+                    this.menu[sourceCategory].splice(targetIndex, 0, item);
+                }
+            },
+            // Configuração
+            openConfigModal() {
+                this.tempConfig = {};
+                for (let cat in this.menu) {
+                    this.tempConfig[cat] = this.config[cat] || { visible: true, show_price: true };
+                }
+                this.showConfig = true;
+            },
+            async saveConfig() {
+                try {
+                    await fetch('/api/admin/config/cardapio', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.tempConfig)
+                    });
+                    this.config = { ...this.tempConfig };
+                    this.showConfig = false;
+                    alert('Configurações salvas!');
+                } catch (e) { alert('Erro ao salvar configurações'); }
+            },
+            isCategoryVisible(cat) {
+                return this.config[cat]?.visible !== false;
+            },
+            isPriceVisible(cat) {
+                return this.config[cat]?.show_price !== false;
+            }
+        }
+    }).mount('#app');
+</script>
+{% endblock %}

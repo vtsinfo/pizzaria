@@ -1,0 +1,136 @@
+{% extends "base_admin.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container pb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="m-0"><i class="fas fa-ticket-alt text-warning"></i> Gerenciar Cupons</h4>
+    </div>
+
+    <div class="row">
+        <!-- Formulário de Adição -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0 text-primary">Novo Cupom</h5>
+                </div>
+                <div class="card-body">
+                    <form id="addCouponForm">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Código (Ex: PIZZA10)</label>
+                            <input type="text" class="form-control text-uppercase" id="code" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Tipo de Desconto</label>
+                            <select class="form-select" id="type">
+                                <option value="porcentagem">Porcentagem (%)</option>
+                                <option value="fixo">Valor Fixo (R$)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Valor</label>
+                            <input type="number" class="form-control" id="value" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Descrição</label>
+                            <input type="text" class="form-control" id="desc" placeholder="Ex: 10% de desconto">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 shadow-sm">Adicionar Cupom</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Cupons -->
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0 text-primary">Cupons Ativos</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Código</th>
+                                    <th>Desconto</th>
+                                    <th>Descrição</th>
+                                    <th class="text-end pe-4">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="couponsTable">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let coupons = {};
+
+    async function loadCoupons() {
+        const res = await fetch('/api/admin/cupons');
+        coupons = await res.json();
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('couponsTable');
+        tbody.innerHTML = '';
+
+        for (const [code, data] of Object.entries(coupons)) {
+            const valueDisplay = data.tipo === 'porcentagem' ? `${data.valor}%` : `R$ ${parseFloat(data.valor).toFixed(2)}`;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                    <td><span class="badge bg-primary fs-6">${code}</span></td>
+                    <td><strong>${valueDisplay}</strong> <small class="text-muted">(${data.tipo})</small></td>
+                    <td>${data.desc}</td>
+                    <td class="text-end">
+                        <button onclick="deleteCoupon('${code}')" class="btn btn-outline-danger btn-sm">Excluir</button>
+                    </td>
+                `;
+            tbody.appendChild(tr);
+        }
+    }
+
+    document.getElementById('addCouponForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const code = document.getElementById('code').value.toUpperCase().trim();
+        const type = document.getElementById('type').value;
+        const value = parseFloat(document.getElementById('value').value);
+        const desc = document.getElementById('desc').value;
+
+        if (!code || !value) return;
+
+        coupons[code] = { valor: value, tipo: type, desc: desc };
+        await saveCoupons();
+
+        e.target.reset();
+        renderTable();
+    });
+
+    async function deleteCoupon(code) {
+        if (confirm(`Deseja realmente excluir o cupom ${code}?`)) {
+            delete coupons[code];
+            await saveCoupons();
+            renderTable();
+        }
+    }
+
+    async function saveCoupons() {
+        await fetch('/api/admin/cupons/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(coupons)
+        });
+    }
+
+    loadCoupons();
+</script>
+{% endblock %}

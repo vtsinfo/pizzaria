@@ -1,0 +1,48 @@
+[
+    {
+        "customer": "Matheus",
+        "phone": "11 956345663",
+        "method": "Retirada",
+        "address": "Retirada na Loja",
+        "items": [
+            {
+                "name": "Mussarela",
+                "price": "R$ 48,99"
+            },
+            {
+                "name": "Colonial Burger",
+                "price": "R$ 32,00"
+            }
+        ],
+        "total": "R$ 72,89",
+        "obs": "",
+        "coupon": "COLONIAL02",
+        "fee": "R$ 0,00",
+        "id": 1768870376504,
+        "timestamp": "19/01/2026 21:52:56"
+    },
+    {
+        "customer": "tercio",
+        "phone": "11964548785",
+        "method": "Entrega",
+        "address": "03949012",
+        "items": [
+            {
+                "name": "Mussarela",
+                "price": "R$ 48,99"
+            },
+            {
+                "name": "Prestígio",
+                "price": "R$ 46,90"
+            }
+        ],
+        "total": "R$ 104,49",
+        "obs": "",
+        "coupon": null,
+        "fee": "R$ 8,60",
+        "id": 1768667753676,
+        "timestamp": "17/01/2026 13:35:53",
+        "motoboy": null,
+        "status": "Em Preparo"
+    }
+]

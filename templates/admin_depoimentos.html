@@ -1,0 +1,119 @@
+{% extends "base_admin.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div id="app" class="container pb-5">
+    {% raw %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="m-0"><i class="fas fa-comments text-warning"></i> Moderação de Depoimentos</h4>
+        <div class="btn-group">
+            <button class="btn btn-sm" :class="filter === 'pending' ? 'btn-warning' : 'btn-outline-warning'"
+                @click="filter = 'pending'">Pendentes</button>
+            <button class="btn btn-sm" :class="filter === 'approved' ? 'btn-success' : 'btn-outline-success'"
+                @click="filter = 'approved'">Aprovados</button>
+            <button class="btn btn-sm" :class="filter === 'all' ? 'btn-secondary' : 'btn-outline-secondary'"
+                @click="filter = 'all'">Todos</button>
+        </div>
+    </div>
+
+    <div v-if="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+
+    <div v-else-if="filteredDepoimentos.length === 0" class="alert alert-info text-center">
+        Nenhum depoimento encontrado neste filtro.
+    </div>
+
+    <div v-else class="row g-3">
+        <div v-for="dep in filteredDepoimentos" :key="dep.id" class="col-md-6">
+            <div class="card h-100 shadow-sm border-0"
+                :class="{'border-start border-5 border-success': dep.aprovado, 'border-start border-5 border-warning': !dep.aprovado}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{ dep.nome }}</h5>
+                        <div class="text-warning">
+                            <i v-for="n in 5" :class="n <= dep.nota ? 'fas fa-star' : 'far fa-star'"></i>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-2"><i class="far fa-clock me-1"></i> {{ dep.data }}</p>
+                    <p class="card-text fst-italic">"{{ dep.texto }}"</p>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" :id="'check-' + dep.id"
+                                :checked="dep.aprovado" @change="toggleApproval(dep)">
+                            <label class="form-check-label small" :for="'check-' + dep.id">
+                                {{ dep.aprovado ? 'Aprovado (Visível)' : 'Pendente (Oculto)' }}
+                            </label>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" @click="deleteDepoimento(dep)">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endraw %}
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script>
+    const { createApp } = Vue;
+    createApp({
+        data() {
+            return {
+                depoimentos: [],
+                loading: true,
+                filter: 'pending'
+            }
+        },
+        computed: {
+            filteredDepoimentos() {
+                if (this.filter === 'all') return this.depoimentos;
+                if (this.filter === 'approved') return this.depoimentos.filter(d => d.aprovado);
+                if (this.filter === 'pending') return this.depoimentos.filter(d => !d.aprovado);
+                return this.depoimentos;
+            }
+        },
+        mounted() {
+            this.fetchDepoimentos();
+        },
+        methods: {
+            async fetchDepoimentos() {
+                const res = await fetch('/api/admin/depoimentos');
+                this.depoimentos = await res.json();
+                this.loading = false;
+            },
+            async toggleApproval(dep) {
+                const newState = !dep.aprovado;
+                dep.aprovado = newState; // Atualização otimista
+
+                try {
+                    const res = await fetch('/api/admin/depoimento/status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: dep.id, aprovado: newState })
+                    });
+                    if (!(await res.json()).success) dep.aprovado = !newState;
+                } catch (e) { dep.aprovado = !newState; alert('Erro de conexão.'); }
+            },
+            async deleteDepoimento(dep) {
+                if (!confirm('Tem certeza que deseja excluir este depoimento?')) return;
+
+                try {
+                    const res = await fetch('/api/admin/depoimento', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: dep.id })
+                    });
+                    if ((await res.json()).success) {
+                        this.depoimentos = this.depoimentos.filter(d => d.id !== dep.id);
+                    } else alert('Erro ao excluir.');
+                } catch (e) { alert('Erro de conexão.'); }
+            }
+        }
+    }).mount('#app');
+</script>
+{% endblock %}

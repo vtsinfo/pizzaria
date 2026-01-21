@@ -1,0 +1,505 @@
+{% extends "base_site.html" %}
+
+{% block head %}
+<style>
+  .card-gourmet {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-gourmet:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border-color: var(--primary-color);
+  }
+
+  .card-gourmet img {
+    height: 220px;
+    width: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+
+  .card-gourmet:hover img {
+    transform: scale(1.08);
+  }
+
+  .price-badge {
+    background: var(--bg-color);
+    color: var(--primary-color);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    border: 1px solid var(--primary-color);
+  }
+
+  /* Cart Floating Button */
+  .fab-cart {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background-color: var(--primary-color);
+    color: #212529;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    font-size: 28px;
+    cursor: pointer;
+    z-index: 1050;
+    border: none;
+    transition: transform 0.2s;
+  }
+
+  .fab-cart:hover {
+    transform: scale(1.1);
+  }
+
+  .cart-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+  }
+
+  /* Modal Dark Theme Overrides */
+  .modal-dark .modal-content {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+  }
+
+  .modal-dark .modal-header,
+  .modal-dark .modal-footer {
+    border-color: var(--border-color);
+  }
+
+  .modal-dark .form-control,
+  .modal-dark .form-select {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+  }
+
+  .modal-dark .btn-close {
+    filter: invert(1);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="app">
+  <section class="py-5 mt-5">
+    <div class="container py-5">
+
+      <!-- Title -->
+      <div class="text-center mb-5 reveal">
+        <h1 class="display-3 fw-bold" style="font-family: 'Playfair Display', serif; color: var(--primary-color);">Nosso
+          Cardápio</h1>
+        <p class="text-secondary lead">Peça online agora mesmo!</p>
+      </div>
+
+      <!-- Categorias Tabs -->
+      <ul class="nav nav-pills mb-5 justify-content-center gap-3 reveal" id="menuTabs" role="tablist">
+        {% for category, items in menu.items() %}
+        {% if config.get(category, {}).get('visible', True) %}
+        <li class="nav-item">
+          <button class="nav-link {{ 'active' if loop.first else '' }} rounded-pill px-4"
+            id="{{ category|lower|replace(' ', '-') }}-tab" data-bs-toggle="pill"
+            data-bs-target="#{{ category|lower|replace(' ', '-') }}">{{ category|upper }}</button>
+        </li>
+        {% endif %}
+        {% endfor %}
+      </ul>
+
+      <!-- Menu Grid -->
+      <div class="tab-content" id="menuTabsContent">
+        {% for category, items in menu.items() %}
+        {% if config.get(category, {}).get('visible', True) %}
+        <div class="tab-pane fade {{ 'show active' if loop.first else '' }}"
+          id="{{ category|lower|replace(' ', '-') }}">
+
+          <!-- Header Categoria -->
+          <div class="col-12 mb-4 text-center">
+            <h3 class="d-inline-block border-bottom pb-2 px-4"
+              style="color: var(--primary-color); border-color: var(--primary-color) !important;">{{ category }}</h3>
+          </div>
+
+          <div class="row g-4 justify-content-center">
+            {% for item in items %}
+            {% if item.visivel %}
+            <div class="col-md-6 col-lg-4">
+              <div class="card-gourmet">
+                <div style="height: 220px; overflow: hidden; position: relative;">
+                  <img src="{{ item.foto if item.foto else url_for('static', filename='img/placeholder_pizza.jpg') }}"
+                    alt="{{ item.nome }}" onerror="this.src='https://placehold.co/600x400?text=Sem+Foto'">
+                </div>
+                <div class="p-3 d-flex flex-column flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="mb-0" style="color: var(--text-color);">{{ item.nome }}</h5>
+                    {% if config.get(category, {}).get('show_price', True) %}
+                    <span class="price-badge">{{ item.preco }}</span>
+                    {% endif %}
+                  </div>
+                  <p class="text-secondary small flex-grow-1">{{ item.desc }}</p>
+
+                  <!-- Action Buttons -->
+                  <div class="mt-3">
+                    {% if site_config.online_ordering_enabled %}
+                    <button class="btn w-100 fw-bold rounded-pill"
+                      style="background-color: var(--primary-color); color: #000;"
+                      @click="addToCart({id: {{ item.id }}, nome: '{{ item.nome|replace("'", "\\'") }}', priceStr: '{{ item.preco }}'})">
+                      <i class="fas fa-cart-plus me-2"></i> Adicionar
+                    </button>
+                    {% else %}
+                    <!-- Whatsapp link fallback -->
+                    <a href="https://wa.me/{{ site_config.whatsapp }}" target="_blank"
+                      class="btn btn-outline-light w-100 rounded-pill btn-sm">
+                      <i class="fab fa-whatsapp"></i> Consultar
+                    </a>
+                    {% endif %}
+                  </div>
+
+                </div>
+              </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+
+      <!-- Whatsapp Footer Fallback -->
+      {% if not site_config.online_ordering_enabled %}
+      <div class="text-center mt-5 reveal">
+        <p class="text-secondary mb-4">Pedidos Online desativados. Peça pelo WhatsApp:</p>
+        <a href="https://wa.me/{{ site_config.whatsapp }}" target="_blank"
+          class="btn btn-lg rounded-pill px-5 fw-bold shadow-lg"
+          style="background-color: var(--primary-color); color: #000;">
+          <i class="fab fa-whatsapp me-2"></i>FAZER PEDIDO PELO WHATSAPP
+        </a>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- CART MODAL & FAB -->
+    {% if site_config.online_ordering_enabled %}
+    <div>
+      <!-- Floating Button -->
+      <button class="fab-cart" @click="openCart" v-if="cart.length > 0">
+        <i class="fas fa-shopping-basket"></i>
+        <span class="cart-count">[[ cartCount ]]</span>
+      </button>
+
+      <!-- Modal Checkout -->
+      <div class="modal fade modal-dark" id="cartModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="fas fa-shopping-basket me-2"></i>Seu Carrinho</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+
+              <!-- Cart Items -->
+              <div v-if="cart.length === 0" class="text-center py-5">
+                <h4 class="text-muted">Seu carrinho está vazio.</h4>
+              </div>
+              <div v-else>
+                <table class="table table-dark table-striped align-middle">
+                  <tbody>
+                    <tr v-for="(item, idx) in cart" :key="idx">
+                      <td>[[ item.nome ]]</td>
+                      <td><input type="number" class="form-control form-control-sm" style="width: 60px"
+                          v-model.number="item.qtd" min="1"></td>
+                      <td class="text-end">R$ [[ (item.preco * item.qtd).toFixed(2).replace('.', ',') ]]</td>
+                      <td class="text-end"><button class="btn btn-sm btn-outline-danger"
+                          @click="removeFromCart(idx)">&times;</button></td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="2" class="fw-bold fs-5 text-end">Total:</td>
+                      <td colspan="2" class="fw-bold fs-5 text-end" style="color: var(--primary-color);">R$ [[
+                        total.toFixed(2).replace('.',
+                        ',') ]]</td>
+                    </tr>
+                  </tfoot>
+                </table>
+
+                <hr class="border-secondary my-4">
+
+                <!-- Checkout Form -->
+                <form @submit.prevent="submitOrder">
+                  <h5 class="mb-3" style="color: var(--primary-color);">1. Identificação</h5>
+                  <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                      <label class="form-label">Nome Completo</label>
+                      <input type="text" class="form-control" v-model="form.nome" required placeholder="Seu nome">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Telefone / WhatsApp</label>
+                      <input type="text" class="form-control" v-model="form.telefone" required
+                        placeholder="(11) 99999-9999">
+                    </div>
+                  </div>
+
+                  <h5 class="mb-3" style="color: var(--primary-color);">2. Entrega</h5>
+                  <div class="mb-4">
+                    <div class="btn-group w-100 mb-3" role="group">
+                      <input type="radio" class="btn-check" name="delivery" id="del1" value="Entrega"
+                        v-model="form.tipo_entrega">
+                      <label class="btn btn-outline-light" for="del1"><i
+                          class="fas fa-motorcycle me-2"></i>Entrega</label>
+
+                      <input type="radio" class="btn-check" name="delivery" id="del2" value="Retirada"
+                        v-model="form.tipo_entrega">
+                      <label class="btn btn-outline-light" for="del2"><i class="fas fa-store me-2"></i>Retirada no
+                        Balcão</label>
+                    </div>
+
+                    <div v-if="form.tipo_entrega === 'Entrega'" class="card card-body"
+                      style="background-color: var(--input-bg); border-color: var(--border-color);">
+                      <div class="row g-2">
+                        <div class="col-8">
+                          <input type="text" class="form-control" v-model="form.rua" placeholder="Rua / Avenida"
+                            required>
+                        </div>
+                        <div class="col-4">
+                          <input type="text" class="form-control" v-model="form.numero" placeholder="Nº" required>
+                        </div>
+                        <div class="col-12">
+                          <input type="text" class="form-control" v-model="form.bairro" placeholder="Bairro" required>
+                        </div>
+                        <div class="col-12 mt-2">
+                          <small style="color: var(--primary-color);">Taxa de Entrega: A combinar / Calc. Final</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <h5 class="mb-3" style="color: var(--primary-color);">3. Pagamento</h5>
+                  <div class="mb-4">
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" type="radio" name="pay" id="pay1" value="maquina_cartao"
+                        v-model="form.pagamento">
+                      <label class="form-check-label" for="pay1">
+                        💳 Cartão (Vou levar a maquinha)
+                      </label>
+                    </div>
+                    <div class="form-check mb-2">
+                      <input class="form-check-input" type="radio" name="pay" id="pay2" value="maquina_pix"
+                        v-model="form.pagamento">
+                      <label class="form-check-label" for="pay2">
+                        📱 Pix (Levar Maquininha - QR Code)
+                      </label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="pay" id="pay3" value="dinheiro"
+                        v-model="form.pagamento">
+                      <label class="form-check-label" for="pay3">
+                        💵 Dinheiro
+                      </label>
+                    </div>
+
+                    <!-- Troco Input -->
+                    <div v-if="form.pagamento === 'dinheiro'" class="mt-2 ms-4">
+                      <input type="text" class="form-control form-control-sm w-50" v-model="form.troco_para"
+                        placeholder="Troco para (ex: R$ 50,00)">
+                    </div>
+                  </div>
+
+                  <div class="mb-4">
+                    <label class="form-label">Observações do Pedido</label>
+                    <textarea class="form-control" v-model="form.obs" rows="2"
+                      placeholder="Ex: Sem cebola, capricha no orégano..."></textarea>
+                  </div>
+
+                  <div class="d-grid">
+                    <button type="submit" class="btn btn-success btn-lg fw-bold" :disabled="submitting">
+                      <span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
+                      [[ submitting ? 'Enviando...' : 'FINALIZAR PEDIDO' ]]
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if site_config.online_ordering_enabled %}
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<!-- Bootstrap Bundle already included in base_site, but Vue needs to be before script usage -->
+
+<script>
+  const { createApp } = Vue;
+
+  createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+      return {
+        cart: [],
+        submitting: false,
+        modalInstance: null,
+        form: {
+          nome: '',
+          telefone: '',
+          tipo_entrega: 'Entrega',
+          rua: '',
+          numero: '',
+          bairro: '',
+          pagamento: 'maquina_cartao',
+          troco_para: '',
+          obs: ''
+        }
+      }
+    },
+    computed: {
+      cartCount() {
+        return this.cart.reduce((acc, item) => acc + item.qtd, 0);
+      },
+      total() {
+        return this.cart.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
+      }
+    },
+    mounted() {
+      // Load cart from localStorage
+      const saved = localStorage.getItem('vts_pizza_cart');
+      if (saved) {
+        try { this.cart = JSON.parse(saved); } catch (e) { }
+      }
+    },
+    methods: {
+      parsePrice(priceStr) {
+        if (!priceStr) return 0;
+        // R$ 45,90 -> 45.90
+        const clean = priceStr.toString().replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+        return parseFloat(clean) || 0;
+      },
+      addToCart(product) {
+        const existing = this.cart.find(i => i.id === product.id);
+        if (existing) {
+          existing.qtd++;
+        } else {
+          this.cart.push({
+            id: product.id,
+            nome: product.nome,
+            preco: this.parsePrice(product.priceStr),
+            qtd: 1
+          });
+        }
+        this.saveCart();
+
+        // Visual feedback
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Adicionado!';
+        btn.classList.remove('btn-warning');
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.classList.add('btn-warning');
+          btn.classList.remove('btn-success');
+        }, 1500);
+      },
+      removeFromCart(index) {
+        this.cart.splice(index, 1);
+        this.saveCart();
+      },
+      saveCart() {
+        localStorage.setItem('vts_pizza_cart', JSON.stringify(this.cart));
+      },
+      openCart() {
+        if (!this.modalInstance) {
+          this.modalInstance = new bootstrap.Modal(document.getElementById('cartModal'));
+        }
+        this.modalInstance.show();
+      },
+      async submitOrder() {
+        if (this.cart.length === 0) return;
+        this.submitting = true;
+
+        const payload = {
+          cliente: {
+            nome: this.form.nome,
+            telefone: this.form.telefone,
+            rua: this.form.rua,
+            numero: this.form.numero,
+            bairro: this.form.bairro
+          },
+          items: this.cart,
+          total: this.total,
+          tipo_entrega: this.form.tipo_entrega,
+          pagamento: {
+            metodo: this.form.pagamento,
+            metodo_label: this.getPaymentLabel(this.form.pagamento),
+            troco_para: this.form.troco_para
+          },
+          obs: this.form.obs
+        };
+
+        try {
+          const res = await fetch('/api/pedido/online', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+
+          if (data.success) {
+            alert('Pedido Enviado com Sucesso! Aguarde a confirmação.');
+            this.cart = [];
+            this.saveCart();
+            this.modalInstance.hide();
+            // Reset form logic optional
+          } else {
+            alert('Erro: ' + data.message);
+          }
+        } catch (e) {
+          alert('Erro de conexão. Tente novamente.');
+        } finally {
+          this.submitting = false;
+        }
+      },
+      getPaymentLabel(key) {
+        const map = {
+          'maquina_cartao': 'Cartão (Maquininha)',
+          'maquina_pix': 'Pix (Maquininha QR)',
+          'dinheiro': 'Dinheiro'
+        };
+        return map[key] || key;
+      }
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends "base_admin.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div id="app" class="container">
+    {% raw %}
+    <div class="card p-4 mb-4">
+        <h4>Gerenciar Usuários</h4>
+        <p class="text-muted">Adicione usuários e defina o que eles podem fazer.</p>
+
+        <form @submit.prevent="addUser" class="row g-3 align-items-end mb-4 border-bottom pb-4">
+            <div class="col-md-3">
+                <label class="form-label">Usuário</label>
+                <input type="text" class="form-control" v-model="newUser.username" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Senha</label>
+                <input type="text" class="form-control" v-model="newUser.password" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Função</label>
+                <select class="form-select" v-model="newUser.role">
+                    <option value="admin">Admin</option>
+                    <option value="editor">Editor</option>
+                    <option value="viewer">Visualizador</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Permissões</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" v-model="newUser.permissions" value="all">
+                    <label class="form-check-label">Tudo (Admin)</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" v-model="newUser.permissions" value="manage_menu">
+                    <label class="form-check-label">Cardápio</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-success w-100">Adicionar</button>
+            </div>
+        </form>
+
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Usuário</th>
+                    <th>Função</th>
+                    <th>Permissões</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(user, index) in users" :key="index">
+                    <td>{{ user.username }}</td>
+                    <td><span class="badge bg-secondary">{{ user.role }}</span></td>
+                    <td>{{ user.permissions.join(', ') }}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" @click="removeUser(index)"
+                            v-if="user.username !== 'admin'">Excluir</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endraw %}
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script>
+    const { createApp } = Vue;
+    createApp({
+        data() {
+            return {
+                users: [],
+                newUser: { username: '', password: '', role: 'editor', permissions: [] }
+            }
+        },
+        mounted() {
+            this.fetchUsers();
+        },
+        methods: {
+            async fetchUsers() {
+                const res = await fetch('/api/admin/usuarios');
+                this.users = await res.json();
+            },
+            async addUser() {
+                // Se for admin, força permissão 'all'
+                if (this.newUser.role === 'admin' && !this.newUser.permissions.includes('all')) {
+                    this.newUser.permissions.push('all');
+                }
+                // Se não selecionou nada, dá permissão básica de menu
+                if (this.newUser.permissions.length === 0) {
+                    this.newUser.permissions.push('manage_menu');
+                }
+
+                this.users.push({ ...this.newUser });
+                await this.saveUsers();
+                this.newUser = { username: '', password: '', role: 'editor', permissions: [] };
+            },
+            async removeUser(index) {
+                if (confirm('Remover usuário?')) {
+                    this.users.splice(index, 1);
+                    await this.saveUsers();
+                }
+            },
+            async saveUsers() {
+                await fetch('/api/admin/usuarios', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.users)
+                });
+            }
+        }
+    }).mount('#app');
+</script>
+{% endblock %}

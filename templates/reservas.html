@@ -1,0 +1,86 @@
+{% extends "base_site.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4 text-primary"><i class="fas fa-calendar-alt"></i> Reservar Mesa</h2>
+
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="/reservas">
+                        <div class="mb-3">
+                            <label for="nome" class="form-label">Seu Nome</label>
+                            <input type="text" class="form-control" id="nome" name="nome" required
+                                placeholder="Ex: João Silva">
+                        </div>
+                        <div class="mb-3">
+                            <label for="telefone" class="form-label">Telefone / WhatsApp</label>
+                            <input type="tel" class="form-control" id="telefone" name="telefone" required
+                                placeholder="(11) 99999-9999">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="data" class="form-label">Data</label>
+                                <input type="date" class="form-control" id="data" name="data" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="hora" class="form-label">Horário</label>
+                                <input type="time" class="form-control" id="hora" name="hora" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="pessoas" class="form-label">Número de Pessoas</label>
+                            <input type="number" class="form-control" id="pessoas" name="pessoas" min="1" value="2"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="obs" class="form-label">Observações (Opcional)</label>
+                            <textarea class="form-control" id="obs" name="obs" rows="3"
+                                placeholder="Ex: Aniversário, cadeira de bebê..."></textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold">Solicitar Reserva</button>
+                        </div>
+                    </form>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Ou reserve pelo WhatsApp:</small><br>
+                        <a href="https://wa.me/{{ site_config.whatsapp }}" target="_blank"
+                            class="btn btn-outline-success btn-sm mt-1">
+                            <i class="fab fa-whatsapp"></i> Falar com Atendente
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const dateInput = document.getElementById('data');
+        if (dateInput) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            dateInput.min = `${yyyy}-${mm}-${dd}`;
+        }
+    });
+</script>
+{% endblock %}

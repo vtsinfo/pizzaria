@@ -1,0 +1,146 @@
+{% extends "base_admin.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div id="app" class="container pb-5">
+    {% raw %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="m-0"><i class="fas fa-bullhorn text-warning"></i> Promoções Agendadas</h4>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 text-primary">Nova Regra de Promoção</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">Configure descontos que ativam automaticamente em horários específicos.</p>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label text-muted small">Nome da Promoção</label>
+                    <input type="text" class="form-control" v-model="newPromo.name" placeholder="Ex: Happy Hour">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small">Desconto (%)</label>
+                    <input type="number" class="form-control" v-model="newPromo.discount">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small">Início</label>
+                    <input type="time" class="form-control" v-model="newPromo.start">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small">Fim</label>
+                    <input type="time" class="form-control" v-model="newPromo.end">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label text-muted small">Categorias</label>
+                    <select class="form-select" v-model="newPromo.categories" multiple style="height: 100px">
+                        <option value="Todas">Todas</option>
+                        <option v-for="cat in categories" :value="cat">{{ cat }}</option>
+                    </select>
+                    <small class="text-muted" style="font-size: 0.75rem;">Segure Ctrl para selecionar várias</small>
+                </div>
+                <div class="col-12">
+                    <label class="form-label d-block text-muted small">Dias da Semana</label>
+                    <div class="form-check form-check-inline" v-for="(day, idx) in daysOfWeek">
+                        <input class="form-check-input" type="checkbox" :value="idx" v-model="newPromo.days">
+                        <label class="form-check-label">{{ day }}</label>
+                    </div>
+                </div>
+                <div class="col-12 text-end">
+                    <button class="btn btn-success shadow-sm" @click="addPromo"><i class="fas fa-plus"></i> Criar
+                        Promoção</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 text-primary">Promoções Ativas</h5>
+        </div>
+        <div class="card-body p-0">
+            <div v-if="promos.length === 0" class="p-4 text-center text-muted">
+                Nenhuma promoção cadastrada.
+            </div>
+            <div v-else class="list-group list-group-flush">
+                <div v-for="(promo, index) in promos" :key="index"
+                    class="list-group-item d-flex justify-content-between align-items-center p-3">
+                    <div>
+                        <h5 class="mb-1 text-dark fw-bold">{{ promo.name }} <span
+                                class="badge bg-warning text-dark ms-2">{{ promo.discount }}% OFF</span></h5>
+                        <p class="mb-1 text-muted small">
+                            <i class="far fa-clock"></i> {{ promo.start }} às {{ promo.end }} <span
+                                class="mx-2">|</span>
+                            <i class="far fa-calendar-alt"></i> {{ formatDays(promo.days) }}
+                        </p>
+                        <small class="text-muted fst-italic">Categorias: {{ promo.categories.join(', ') }}</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" v-model="promo.active" @change="savePromos">
+                            <label class="form-check-label small">Ativa</label>
+                        </div>
+                        <button class="btn btn-outline-danger btn-sm" @click="removePromo(index)">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endraw %}
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script>
+    const { createApp } = Vue;
+    createApp({
+        data() {
+            return {
+                promos: [],
+                categories: [],
+                daysOfWeek: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+                newPromo: { name: '', discount: 10, start: '18:00', end: '20:00', days: [], categories: ['Todas'], active: true }
+            }
+        },
+        mounted() {
+            this.fetchData();
+        },
+        methods: {
+            async fetchData() {
+                const resPromos = await fetch('/api/admin/promocoes');
+                this.promos = await resPromos.json();
+
+                const resCats = await fetch('/api/admin/categorias');
+                this.categories = await resCats.json();
+            },
+            formatDays(days) {
+                return days.map(d => this.daysOfWeek[d]).join(', ');
+            },
+            async addPromo() {
+                if (!this.newPromo.name || this.newPromo.days.length === 0) {
+                    alert('Preencha o nome e selecione pelo menos um dia.');
+                    return;
+                }
+                this.promos.push({ ...this.newPromo });
+                await this.savePromos();
+                this.newPromo.name = ''; // Reset básico
+            },
+            async removePromo(index) {
+                if (confirm('Excluir promoção?')) {
+                    this.promos.splice(index, 1);
+                    await this.savePromos();
+                }
+            },
+            async savePromos() {
+                await fetch('/api/admin/promocoes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.promos)
+                });
+            }
+        }
+    }).mount('#app');
+</script>
+{% endblock %}
