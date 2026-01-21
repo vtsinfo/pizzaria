@@ -1,0 +1,191 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.admin-header {
+    background: #343a40;
+    color: white;
+    padding: 15px 0;
+    margin-bottom: 30px;
+}
+
+.admin-container {
+    padding-bottom: 50px;
+}
+
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: none;
+}
+
+/* Utilitários */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* Admin Cardápio */
+.category-section {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.item-row {
+    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+}
+
+.item-row:last-child {
+    border-bottom: none;
+}
+
+.btn-save-float {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    padding: 15px 30px;
+    font-size: 1.2em;
+    border-radius: 50px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.drag-handle {
+    cursor: grab;
+    color: #adb5bd;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.item-row.dragging {
+    opacity: 0.5;
+    background: #e9ecef;
+}
+
+/* Modais Customizados (Preview) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content-custom {
+    background: white;
+    width: 90%;
+    max-width: 900px;
+    max-height: 90vh;
+    padding: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.preview-header {
+    padding: 15px 20px;
+    background: #343a40;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.preview-body {
+    padding: 20px;
+    overflow-y: auto;
+    background: #f8f9fa;
+}
+
+/* Admin Pedidos - Alerta de Atraso */
+.alert-late {
+    border-color: #dc3545 !important;
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+}
+
+/* Novos Utilitários (Refatoração) */
+.w-100px {
+    width: 100px;
+}
+
+.w-150px {
+    width: 150px;
+}
+
+.w-180px {
+    width: 180px;
+}
+
+.w-auto-custom {
+    width: auto;
+}
+
+.max-w-400 {
+    max-width: 400px;
+}
+
+.max-w-600 {
+    max-width: 600px;
+}
+
+.text-small-08 {
+    font-size: 0.8em;
+}
+
+.text-small-07 {
+    font-size: 0.7em;
+}
+
+.cursor-edit {
+    cursor: pointer;
+    border-bottom: 1px dashed #ccc;
+}
+
+.img-preview-sm {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.chart-container-lg {
+    position: relative;
+    height: 400px;
+    width: 100%;
+}
+
+.chart-container-md {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+.modal-custom-bg {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.logo-preview {
+    max-height: 60px;
+    border: 1px solid #ccc;
+    padding: 2px;
+    border-radius: 5px;
+}

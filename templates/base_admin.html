@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin Colonial{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark admin-header border-bottom border-secondary">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold text-warning" href="/admin/dashboard">
+                <i class="fas fa-pizza-slice"></i> Admin Colonial
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar"
+                aria-controls="adminNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="adminNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <!-- Dashboard -->
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active fw-bold' if request.path == '/admin/dashboard' }}"
+                            aria-current="page" href="/admin/dashboard">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li>
+
+                    <!-- Operação -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            <i class="fas fa-tasks"></i> Operação
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark">
+                            <li><a class="dropdown-item" href="/admin/pedidos">
+                                    Pedidos
+                                    <span id="pedidosBadgeGlobal" class="badge bg-danger ms-1"
+                                        style="display: none;">0</span>
+                                </a></li>
+                            <li><a class="dropdown-item" href="/admin/reservas">Reservas</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="/cozinha" target="_blank"><i class="fas fa-tv"></i>
+                                    Monitor Cozinha (KDS)</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Gestão -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            <i class="fas fa-box-open"></i> Gestão
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark">
+                            <li><a class="dropdown-item" href="/admin">Cardápio (Produtos)</a></li>
+                            {% if site_config.inventory_enabled %}
+                            <li><a class="dropdown-item" href="/admin/estoque">Estoque (Insumos)</a></li>
+                            {% endif %}
+                            <li><a class="dropdown-item" href="/admin/motoboys">Motoboys</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Marketing -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            <i class="fas fa-bullhorn"></i> Marketing
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark">
+                            <li><a class="dropdown-item" href="/admin/cupons">Cupons de Desconto</a></li>
+                            <li><a class="dropdown-item" href="/admin/promocoes">Promoções Automáticas</a></li>
+                            <li><a class="dropdown-item" href="/admin/depoimentos">Depoimentos</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Sistema -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            <i class="fas fa-cogs"></i> Sistema
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark">
+                            <li><a class="dropdown-item" href="/admin/usuarios">Usuários de Acesso</a></li>
+                            <li><a class="dropdown-item" href="/admin/logs">Logs de Atividade</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="/admin/config"><i class="fas fa-sliders-h"></i>
+                                    Configurações</a></li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Botões extras injetados pelas páginas -->
+                    {% block navbar_actions %}{% endblock %}
+
+                    <a href="/logout" class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-sign-out-alt"></i> Sair
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="app-container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

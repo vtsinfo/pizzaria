@@ -8,9 +8,9 @@ venv/
 env/
 
 # Banco de Dados e Logs (Opcional: comente se quiser sincronizar o banco, mas cuidado com conflitos)
-# instance/
-# *.db
-# *.sqlite3
+instance/
+*.db
+*.sqlite3
 
 # Logs
 logs.json

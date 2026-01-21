@@ -48,10 +48,6 @@ class Produto(db.Model):
     visivel = db.Column(db.Boolean, default=True)
     esgotado = db.Column(db.Boolean, default=False)
     
-    # NOVO: Define se é 'fabricado' (usa receita) ou 'revenda' (baixa direta do estoque)
-    tipo = db.Column(db.String(20), default='fabricado') 
-    ingrediente_id = db.Column(db.Integer, db.ForeignKey('ingredientes.id'), nullable=True)
-    
     # Relacionamento com Ingredientes (Ficha Técnica)
     receita = db.relationship('FichaTecnica', backref='produto', lazy=True)
 
@@ -93,3 +89,26 @@ class ItemPedido(db.Model):
     quantidade = db.Column(db.Integer, nullable=False)
     preco_unitario = db.Column(db.Float, nullable=False)
     observacao = db.Column(db.String(200))
+
+# --- RESERVAS ---
+class Reserva(db.Model):
+    __tablename__ = 'reservas'
+    id = db.Column(db.Integer, primary_key=True)
+    nome_cliente = db.Column(db.String(100), nullable=False)
+    telefone = db.Column(db.String(20), nullable=False)
+    data_reserva = db.Column(db.Date, nullable=False)
+    hora_reserva = db.Column(db.Time, nullable=False)
+    num_pessoas = db.Column(db.Integer, nullable=False)
+    observacao = db.Column(db.Text)
+    status = db.Column(db.String(20), default='Pendente') # Pendente, Confirmada, Cancelada, Concluida
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# --- DEPOIMENTOS ---
+class Depoimento(db.Model):
+    __tablename__ = 'depoimentos'
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False)
+    texto = db.Column(db.Text, nullable=False)
+    nota = db.Column(db.Integer, default=5)
+    data = db.Column(db.DateTime, default=datetime.utcnow)
+    aprovado = db.Column(db.Boolean, default=False) # Para moderação futura

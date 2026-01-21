@@ -1,0 +1,180 @@
+{% extends "base_site.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #map-main {
+        height: 400px;
+        width: 100%;
+        border-radius: 12px;
+        z-index: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5 mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 text-center reveal">
+            <h1 class="display-4 fw-bold mb-4"
+                style="font-family: 'Playfair Display', serif; color: var(--primary-color);">Nossa História</h1>
+
+            {% if site_config.logo_url %}
+            <div class="mb-5">
+                <img src="{{ site_config.logo_url }}" alt="{{ site_config.nome_fantasia }}"
+                    class="img-fluid rounded shadow-lg" style="max-height: 250px;">
+            </div>
+            {% else %}
+            <div class="mb-5">
+                <i class="fas fa-pizza-slice fa-5x text-secondary opacity-50"></i>
+            </div>
+            {% endif %}
+
+            <div class="card bg-dark border-secondary shadow-sm text-start">
+                <div class="card-body p-4 p-md-5">
+                    <div class="lead text-light" style="white-space: pre-line; line-height: 1.8;">
+                        {{ site_config.sobre_nos }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5">
+                <h3 class="text-warning mb-4" style="font-family: 'Playfair Display', serif;">Nossa Casa</h3>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <img src="https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=600&q=80"
+                            class="img-fluid rounded shadow-sm border border-secondary w-100"
+                            style="height: 250px; object-fit: cover;" alt="Ambiente">
+                    </div>
+                    <div class="col-md-4">
+                        <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=80"
+                            class="img-fluid rounded shadow-sm border border-secondary w-100"
+                            style="height: 250px; object-fit: cover;" alt="Restaurante">
+                    </div>
+                    <div class="col-md-4">
+                        <img src="https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=600&q=80"
+                            class="img-fluid rounded shadow-sm border border-secondary w-100"
+                            style="height: 250px; object-fit: cover;" alt="Bar">
+                    </div>
+                    <div class="col-md-6">
+                        <img src="https://images.unsplash.com/photo-1590846406792-0adc7f938f1d?auto=format&fit=crop&w=800&q=80"
+                            class="img-fluid rounded shadow-sm border border-secondary w-100"
+                            style="height: 300px; object-fit: cover;" alt="Pizza Forno">
+                    </div>
+                    <div class="col-md-6">
+                        <img src="https://images.unsplash.com/photo-1574126154517-d1e0d89e7344?auto=format&fit=crop&w=800&q=80"
+                            class="img-fluid rounded shadow-sm border border-secondary w-100"
+                            style="height: 300px; object-fit: cover;" alt="Mesa">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mapa e Depoimento -->
+            <div class="row mt-5 g-4">
+                <!-- Mapa -->
+                <div class="col-lg-6">
+                    <h3 class="text-warning mb-4" style="font-family: 'Playfair Display', serif;">Onde Estamos</h3>
+                    <div id="map-main" class="shadow-sm border border-secondary"></div>
+                    <p class="text-muted mt-2 small"><i class="fas fa-map-marker-alt text-warning"></i> {{
+                        site_config.endereco_principal }}</p>
+                </div>
+
+                <!-- Formulário de Depoimento -->
+                <div class="col-lg-6">
+                    <h3 class="text-warning mb-4" style="font-family: 'Playfair Display', serif;">Deixe seu Depoimento
+                    </h3>
+                    <div class="card bg-dark border-secondary">
+                        <div class="card-body">
+                            <form id="testimonialForm" onsubmit="submitTestimonial(event)">
+                                <div class="mb-3">
+                                    <label class="form-label text-light">Seu Nome</label>
+                                    <input type="text" class="form-control bg-dark text-light border-secondary"
+                                        id="depNome" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-light">Sua Mensagem</label>
+                                    <textarea class="form-control bg-dark text-light border-secondary" id="depTexto"
+                                        rows="3" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-light">Avaliação</label>
+                                    <div class="rating-stars fs-4 text-warning cursor-pointer">
+                                        <i class="far fa-star" data-val="1" onclick="setRating(1)"></i>
+                                        <i class="far fa-star" data-val="2" onclick="setRating(2)"></i>
+                                        <i class="far fa-star" data-val="3" onclick="setRating(3)"></i>
+                                        <i class="far fa-star" data-val="4" onclick="setRating(4)"></i>
+                                        <i class="far fa-star" data-val="5" onclick="setRating(5)"></i>
+                                    </div>
+                                    <input type="hidden" id="depNota" value="0">
+                                </div>
+                                <button type="submit" class="btn btn-warning w-100 fw-bold">Enviar Depoimento</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Mapa
+    document.addEventListener('DOMContentLoaded', function () {
+        const units = {{ site_config.units | tojson | default ('[]')
+    }};
+    // Usa a primeira unidade como principal ou coordenadas padrão SP
+    const mainUnit = units.length > 0 ? units[0] : { lat: -23.5505, lon: -46.6333 };
+
+    const map = L.map('map-main').setView([mainUnit.lat, mainUnit.lon], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    L.marker([mainUnit.lat, mainUnit.lon]).addTo(map)
+        .bindPopup('<b>Pizzaria Colonial</b><br>Unidade Principal').openPopup();
+    });
+
+    // Avaliação (Estrelas)
+    function setRating(val) {
+        document.getElementById('depNota').value = val;
+        const stars = document.querySelectorAll('.rating-stars i');
+        stars.forEach((s, idx) => {
+            s.className = idx < val ? 'fas fa-star' : 'far fa-star';
+        });
+    }
+
+    // Envio do Formulário
+    async function submitTestimonial(e) {
+        e.preventDefault();
+        const nome = document.getElementById('depNome').value;
+        const texto = document.getElementById('depTexto').value;
+        const nota = document.getElementById('depNota').value;
+
+        if (nota == 0) { alert('Por favor, selecione uma nota de 1 a 5 estrelas.'); return; }
+
+        try {
+            const res = await fetch('/api/depoimento/novo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, texto, nota })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                e.target.reset();
+                setRating(0);
+            } else {
+                alert('Erro: ' + data.message);
+            }
+        } catch (err) {
+            alert('Erro ao enviar.');
+        }
+    }
+</script>
+{% endblock %}

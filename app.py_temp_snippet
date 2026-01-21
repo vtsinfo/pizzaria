@@ -1,0 +1,10 @@
+def parse_price(price_input):
+    if not price_input: return 0.0
+    if isinstance(price_input, (int, float)): return float(price_input)
+    try:
+        # Remove R$, spaces, convert , to .
+        clean = str(price_input).replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
+        return float(clean)
+    except:
+        return 0.0
+

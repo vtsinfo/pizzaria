@@ -11,7 +11,7 @@ from datetime import datetime
 from collections import Counter
 from flask_sqlalchemy import SQLAlchemy     # Novo
 from database import db, init_db   # Novo
-from models import User, Categoria, Produto, Pedido, ItemPedido, Ingrediente, FichaTecnica # Novo
+from models import User, Categoria, Produto, Pedido, ItemPedido, Ingrediente, FichaTecnica, Reserva, Depoimento # Novo
 
 # --- API DE ESTOQUE (FASE 2) ---
 
@@ -91,6 +91,23 @@ def api_ingredientes():
             return jsonify({"success": True})
         return jsonify({"success": False, "message": "Ingrediente não encontrado"}), 404
 
+@app.route('/api/admin/estoque/baixo', methods=['GET'])
+def api_estoque_baixo():
+    if not session.get('logged_in'):
+        return jsonify({"success": False}), 401
+
+    # Busca ingredientes com estoque abaixo ou igual ao mínimo
+    ingredientes = Ingrediente.query.filter(Ingrediente.estoque_atual <= Ingrediente.estoque_minimo).all()
+    
+    return jsonify([{
+        "id": i.id,
+        "nome": i.nome,
+        "unidade": i.unidade,
+        "estoque_atual": i.estoque_atual,
+        "estoque_minimo": i.estoque_minimo,
+        "tipo": i.tipo
+    } for i in ingredientes])
+
 @app.route('/api/admin/receita/<int:produto_id>', methods=['GET'])
 def get_receita(produto_id):
     if not session.get('logged_in'):
@@ -155,7 +172,6 @@ LOYALTY_FILE = os.path.join(os.path.dirname(__file__), 'fidelidade.json')
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'config.json')
 BANNERS_FILE = os.path.join(os.path.dirname(__file__), 'banners.json')
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
-RESERVATIONS_FILE = os.path.join(os.path.dirname(__file__), 'reservas.json')
 
 @app.route('/')
 def index():
@@ -163,7 +179,11 @@ def index():
     if os.path.exists(BANNERS_FILE):
         with open(BANNERS_FILE, 'r', encoding='utf-8') as f:
             banners = json.load(f)
-    return render_template('index.html', title='Pizzaria Colonial — Pizzas, Churrasco e Lanches', banners=banners)
+            
+    # Busca depoimentos aprovados (limitado a 3 mais recentes)
+    depoimentos = Depoimento.query.filter_by(aprovado=True).order_by(Depoimento.data.desc()).limit(3).all()
+    
+    return render_template('index.html', title='Pizzaria Colonial — Pizzas, Churrasco e Lanches', banners=banners, depoimentos=depoimentos)
 
 @app.route('/cardapio')
 def cardapio():
@@ -197,33 +217,46 @@ def cardapio():
             
     return render_template('cardapio.html', title='Nosso Cardápio — Pizzaria Colonial', menu=menu, config=config)
 
+@app.route('/sobre')
+def sobre():
+    return render_template('sobre.html', title='Sobre Nós — Pizzaria Colonial')
+
+@app.route('/api/depoimento/novo', methods=['POST'])
+def novo_depoimento():
+    try:
+        data = request.get_json()
+        depoimento = Depoimento(
+            nome=data.get('nome'),
+            texto=data.get('texto'),
+            nota=int(data.get('nota', 5))
+        )
+        db.session.add(depoimento)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Obrigado! Seu depoimento foi enviado para aprovação."})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
 @app.route('/reservas', methods=['GET', 'POST'])
 def reservas():
     if request.method == 'POST':
-        nome = request.form.get('nome')
-        telefone = request.form.get('telefone')
-        data_reserva = request.form.get('data')
-        hora_reserva = request.form.get('hora')
-        pessoas = request.form.get('pessoas')
-        obs = request.form.get('obs')
-
-        nova_reserva = {
-            "id": int(datetime.now().timestamp()),
-            "data_criacao": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-            "nome": nome,
-            "telefone": telefone,
-            "data_reserva": data_reserva,
-            "hora_reserva": hora_reserva,
-            "pessoas": pessoas,
-            "obs": obs,
-            "status": "pendente"
-        }
-
-        # Salva em JSON
-        save_json_list(RESERVATIONS_FILE, nova_reserva)
-
-        flash('Sua solicitação de reserva foi enviada com sucesso! Entraremos em contato para confirmar.', 'success')
-        return redirect(url_for('reservas'))
+        try:
+            # Captura dados do formulário
+            nova_reserva = Reserva(
+                nome_cliente=request.form.get('nome'),
+                telefone=request.form.get('telefone'),
+                data_reserva=datetime.strptime(request.form.get('data'), '%Y-%m-%d').date(),
+                hora_reserva=datetime.strptime(request.form.get('hora'), '%H:%M').time(),
+                num_pessoas=int(request.form.get('pessoas')),
+                observacao=request.form.get('obs'),
+                status='Pendente'
+            )
+            db.session.add(nova_reserva)
+            db.session.commit()
+            flash('Sua solicitação de reserva foi enviada com sucesso! Entraremos em contato para confirmar.', 'success')
+            return redirect(url_for('reservas'))
+        except Exception as e:
+            flash(f'Erro ao processar reserva: {str(e)}', 'danger')
+            
     return render_template('reservas.html', title='Reservas — Pizzaria Colonial')
 
 @app.route('/unidades')
@@ -239,11 +272,15 @@ def inject_site_config():
         "whatsapp": "5511914569028",
         "endereco_principal": "Rua Virgínia Ferni, 1758 - Itaquera, SP",
         "tempo_espera": "40-50 min",
-        "logo_url": "", # Se vazio, usa texto
-        "cor_primaria": "#ffc107", # Amarelo padrão
-        "ai_enabled": True, # Assistente ativado por padrão
+        "logo_url": "", 
+        "cor_primaria": "#ffc107", 
+        "ai_enabled": True,
+        "theme": "dark", # Novo padrão: Escuro
         "instagram": "",
-        "facebook": ""
+        "facebook": "",
+        "online_ordering_enabled": False,
+        "manual_payment_confirm": True,
+        "sobre_nos": "A Pizzaria Colonial nasceu do sonho de trazer o verdadeiro sabor da pizza artesanal para a nossa região. Desde a nossa fundação, trabalhamos com ingredientes selecionados e muito carinho em cada receita.\n\nNossa missão é proporcionar momentos felizes e saborosos para você e sua família."
     }
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
@@ -268,51 +305,14 @@ def api_cardapio():
         for cat in categorias_db:
             produtos_db = Produto.query.filter_by(categoria_id=cat.id).all()
             items_list = []
-            
-            # Carrega Config
-            inventory_enabled = False
-            allow_negative = True
-            if os.path.exists(CONFIG_FILE):
-                try: 
-                    with open(CONFIG_FILE, 'r', encoding='utf-8') as f: 
-                         cfg = json.load(f)
-                         inventory_enabled = cfg.get('inventory_enabled', False)
-                         allow_negative = cfg.get('allow_negative_stock', True)
-                except: pass
-
             for p in produtos_db:
-                # Lógica de Visibilidade por Estoque
-                is_sold_out = p.esgotado # Respeita flag manual
-                should_display = True
-                
-                if inventory_enabled and not allow_negative:
-                    # Revenda: Se zerar, esconde do cardápio
-                    if p.tipo == 'revenda' and p.ingrediente_id:
-                         ing = Ingrediente.query.get(p.ingrediente_id)
-                         if not ing:
-                             pass
-                         elif ing.estoque_atual <= 0:
-                             should_display = False
-                    
-                    # Fabricado: Se faltar ingrediente, marca Esgotado
-                    elif p.tipo == 'fabricado':
-                        receita = FichaTecnica.query.filter_by(produto_id=p.id).all()
-                        for r in receita:
-                            # Se ingrediente zerar
-                            if r.ingrediente.estoque_atual <= 0:
-                                is_sold_out = True
-                                break
-                
-                if not should_display: continue
-
                 items_list.append({
                     "id": p.id,
                     "nome": p.nome,
                     "desc": p.descricao,
                     "preco": f"R$ {p.preco:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
                     "foto": p.foto_url,
-                    "visivel": p.visivel,
-                    "esgotado": is_sold_out
+                    "visivel": p.visivel
                 })
             
             if items_list:
@@ -394,22 +394,17 @@ def log_activity(action):
     with open(LOGS_FILE, 'w', encoding='utf-8') as f:
         json.dump(logs, f, indent=4, ensure_ascii=False)
 
-def save_json_list(filepath, new_item):
-    items = []
-    if os.path.exists(filepath):
-        try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                items = json.load(f)
-        except: pass
-    
-    items.append(new_item)
-    with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(items, f, indent=4, ensure_ascii=False)
-
 def check_permission(perm):
     user_perms = session.get('permissions', [])
     if 'all' in user_perms: return True
     return perm in user_perms
+
+# Rota para o Monitor de Cozinha (KDS)
+@app.route('/cozinha')
+def cozinha_monitor():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('cozinha.html')
 
 # Rota para a interface administrativa
 @app.route('/admin')
@@ -428,17 +423,17 @@ def admin_panel():
         
     return render_template('admin_cardapio.html', title='Cardápio — Admin Colonial')
 
-@app.route('/admin/reservas')
-def admin_reservas_view():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    return render_template('admin_reservas.html', title='Reservas — Admin Colonial')
-
 @app.route('/admin/pedidos')
 def admin_pedidos():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     return render_template('admin_pedidos.html', title='Pedidos em Tempo Real — Pizzaria Colonial')
+
+@app.route('/admin/reservas')
+def admin_reservas():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('admin_reservas.html', title='Gestão de Reservas — Admin Colonial')
 
 @app.route('/admin/cupons')
 def admin_cupons():
@@ -459,6 +454,12 @@ def admin_promocoes():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     return render_template('admin_promocoes.html', title='Promoções — Admin Colonial')
+
+@app.route('/admin/depoimentos')
+def admin_depoimentos():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('admin_depoimentos.html', title='Moderação de Depoimentos — Admin Colonial')
 
 @app.route('/admin/logs')
 def admin_logs():
@@ -821,6 +822,17 @@ def validar_cupom():
     except Exception as e:
         return jsonify({"valid": False, "message": "Erro ao processar cupom."}), 500
 
+
+def parse_price(price_input):
+    if not price_input: return 0.0
+    if isinstance(price_input, (int, float)): return float(price_input)
+    try:
+        # Remove R$, spaces, convert , to .
+        clean = str(price_input).replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
+        return float(clean)
+    except:
+        return 0.0
+
 # --- API DE PEDIDOS ---
 
 # Helper para converter Pedido SQL -> Dict (Compatibilidade Legada)
@@ -851,7 +863,11 @@ def pedido_to_dict(p):
         "fee": f"R$ {meta.get('taxa_entrega', 0):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
         "timestamp": p.data_hora.strftime("%d/%m/%Y %H:%M:%S"),
         "status": p.status,
-        "motoboy": meta.get('motoboy')
+        "motoboy": meta.get('motoboy'),
+        "payment_info": {
+            "method": p.metodo_pagamento or "Não informado",
+            "change": meta.get('troco_para')
+        }
     }
 
 @app.route('/api/pedido/novo', methods=['POST'])
@@ -864,85 +880,52 @@ def novo_pedido():
         try:
             total_val = float(total_str)
             if total_val <= 0:
-                return jsonify({"success": False, "message": "O valor total do pedido deve ser maior que zero."}), 400
+                pass 
+                # return jsonify({"success": False, "message": "O valor total do pedido deve ser maior que zero."}), 400
         except ValueError:
             return jsonify({"success": False, "message": "Valor total inválido."}), 400
 
-        # Validação de Estoque (Fase 2)
-        # Check config
-        config = {}
-        if os.path.exists(CONFIG_FILE):
-             try:
-                 with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                     config = json.load(f)
-             except: pass
-             
-        if config.get('inventory_enabled', False) and not config.get('allow_negative_stock', True):
-            # Verifica cada item
-            for item in data.get('items', []):
-                prod = Produto.query.filter_by(nome=item.get('name')).first()
-                if not prod: continue # Ignora se não achar produto (ex: item custom)
-                
-                qtd_pedido = 1 # Front envia lista flat de itens, 1 por vez
-                
-                # Revenda
-                if prod.tipo == 'revenda' and prod.ingrediente_id:
-                    ing = Ingrediente.query.get(prod.ingrediente_id)
-                    if ing and ing.estoque_atual < qtd_pedido:
-                        return jsonify({"success": False, "message": f"Estoque insuficiente: {prod.nome} (Disponível: {ing.estoque_atual})"}), 400
-                
-                # Fabricado
-                elif prod.tipo == 'fabricado':
-                    receita = FichaTecnica.query.filter_by(produto_id=prod.id).all()
-                    for r in receita:
-                        qtd_necessaria = r.quantidade * qtd_pedido
-                        if r.ingrediente.estoque_atual < qtd_necessaria:
-                             return jsonify({"success": False, "message": f"Ingrediente insuficiente para {prod.nome}: {r.ingrediente.nome}"}), 400
-
-        # Cria Pedido SQL
-        # Extrai taxa
-        fee_str = data.get('fee', '0').replace('R$', '').replace('.', '').replace(',', '.').strip()
-        fee_val = 0.0
+        # Recupera taxa de entrega
+        fee_str = data.get('fee', '0').replace('R$ ', '').replace('R$', '').replace('.', '').replace(',', '.').strip()
         try: fee_val = float(fee_str)
-        except: pass
+        except: fee_val = 0.0
 
         meta = {
             "taxa_entrega": fee_val,
             "coupon": data.get('coupon'),
             "metodo_envio": data.get('method'),
             "obs": data.get('obs', ''),
-            "motoboy": None
+            "motoboy": None,
+            "troco_para": data.get('change')
         }
-        
-        # ID manual timestamp para compatibilidade se necessário, mas SQL usa autoincrement
-        # Vamos deixar o SQL gerar o ID. O frontend não usa o ID retornado neste endpoint.
-        
+
+        # Cria Pedido SQL
         pedido = Pedido(
             data_hora=datetime.now(),
             cliente_nome=data.get('customer'),
             cliente_telefone=data.get('phone'),
             cliente_endereco=data.get('address'),
-            status='novo', # ou Pendente
-            metodo_pagamento='site', # TODO: pegar do front se tiver
+            status='Pendente', # Status inicial
+            metodo_pagamento=data.get('paymentMethod', 'Site'),
             total=total_val,
             metadata_json=json.dumps(meta)
         )
         db.session.add(pedido)
-        db.session.flush() # Gerar ID
+        db.session.flush() # Gerar ID (necessário para itens)
         
         # Cria Itens
         for item in data.get('items', []):
             # Parse preço unitario
             i_price = parse_price(item.get('price'))
             
-            # Tenta linkar com produto existente (opcional, mas bom pra estoque futuro)
+            # Tenta linkar com produto existente
             prod = Produto.query.filter_by(nome=item.get('name')).first()
             
             item_obj = ItemPedido(
                 pedido_id=pedido.id,
                 produto_nome=item.get('name'),
                 produto_id=prod.id if prod else None,
-                quantidade=1, # Front atual não manda qtd explicita no JSON do pedido array, assume 1 por item listado
+                quantidade=1, 
                 preco_unitario=i_price,
                 observacao=""
             )
@@ -951,9 +934,94 @@ def novo_pedido():
         db.session.commit()
             
         return jsonify({"success": True})
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({"success": False, "message": str(e)}), 500
+        print(f"Erro ao criar pedido: {e}")
+        return jsonify({"success": False, "message": "Erro ao processar pedido."}), 500
+
+@app.route('/api/pedido/online', methods=['POST'])
+def novo_pedido_online():
+    try:
+        data = request.get_json()
+        
+        # 1. Config Check
+        config = {}
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f: config = json.load(f)
+        
+        if not config.get('online_ordering_enabled', False):
+            return jsonify({"success": False, "message": "Pedidos online estão temporariamente desativados."}), 403
+
+        # 2. Dados Basicos
+        cliente = data.get('cliente', {})
+        items = data.get('items', [])
+        pagamento = data.get('pagamento', {})
+        
+        if not items:
+            return jsonify({"success": False, "message": "O carrinho está vazio."}), 400
+
+        # 3. Define Status Inicial
+        manual_confirm = config.get('manual_payment_confirm', True)
+        initial_status = 'Aguardando Confirmação' if manual_confirm else 'Pendente'
+
+        # 4. Calcula Totais
+        total_items = 0.0
+        # Re-confirma precos do banco para seguranca (Simplificado aqui, confia no front por enqto ou TODO)
+        total_items = float(data.get('total', 0)) # TODO: Validar server-side
+        
+        # 5. Metadata (Pagamento e Endereco)
+        meta = {
+            "metodo_envio": data.get('tipo_entrega', 'Retirada'), # Entrega ou Retirada
+            "taxa_entrega": data.get('taxa_entrega', 0),
+            "obs": data.get('obs', ''),
+            "forma_pagamento": pagamento.get('metodo'), # 'maquina_cartao', 'maquina_pix', 'dinheiro'
+            "troco_para": pagamento.get('troco_para'),
+            "endereco_completo": f"{cliente.get('rua')}, {cliente.get('numero')} - {cliente.get('bairro')}" if data.get('tipo_entrega') == 'Entrega' else 'Retirada no Balcão'
+        }
+
+        # 6. Cria Pedido
+        novo_pedido = Pedido(
+            cliente_nome=cliente.get('nome'),
+            cliente_telefone=cliente.get('telefone'),
+            cliente_endereco=meta['endereco_completo'],
+            status=initial_status,
+            metodo_pagamento=pagamento.get('metodo_label'), # Texto legivel: "Cartão (Maquininha)"
+            total=total_items,
+            metadata_json=json.dumps(meta, ensure_ascii=False)
+        )
+        db.session.add(novo_pedido)
+        db.session.flush() # ID
+
+        # 7. Itens
+        for item in items:
+            item_db = ItemPedido(
+                pedido_id=novo_pedido.id,
+                produto_nome=item.get('nome'),
+                produto_id=item.get('id'), # Pode ser None
+                quantidade=int(item.get('qtd', 1)),
+                preco_unitario=float(item.get('preco', 0)),
+                observacao=item.get('obs', '')
+            )
+            db.session.add(item_db)
+
+        db.session.commit()
+        
+        # Log (Opcional)
+        # log_activity(f"Novo pedido online #{novo_pedido.id} - {novo_pedido.status}")
+
+        return jsonify({
+            "success": True, 
+            "id": novo_pedido.id, 
+            "message": "Pedido recebido com sucesso!",
+            "status": initial_status
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": f"Erro interno: {str(e)}"}), 500
+
+
 
 @app.route('/api/admin/pedidos')
 def get_pedidos():
@@ -998,49 +1066,23 @@ def concluir_pedido():
                         if not item.produto_id: 
                             print(f"DEBUG: Item {item.produto_nome} has no Product ID")
                             continue
-                        
-                        prod = Produto.query.get(item.produto_id)
-                        
-                        # Lógica 1: Produto de Revenda (Link Direto)
-                        if prod and prod.tipo == 'revenda' and prod.ingrediente_id:
-                            ing = Ingrediente.query.get(prod.ingrediente_id)
-                            if ing and ing.estoque_atual < item.quantidade:
-                                return jsonify({"success": False, "message": f"Estoque insuficiente de {ing.nome}. Necessário: {item.quantidade}, Atual: {ing.estoque_atual}"}), 400
-                        
-                        # Lógica 2: Produto Fabricado (Ficha Técnica)
-                        else:
-                            receita = FichaTecnica.query.filter_by(produto_id=item.produto_id).all()
-                            if not receita and prod.tipo == 'fabricado': 
-                                print(f"DEBUG: No recipe for Product {item.produto_id}")
-                            
-                            for r in receita:
-                                qtd_necessaria = r.quantidade * item.quantidade
-                                if r.ingrediente.estoque_atual < qtd_necessaria:
-                                    return jsonify({"success": False, "message": f"Estoque insuficiente de {r.ingrediente.nome}. Necessário: {qtd_necessaria}, Atual: {r.ingrediente.estoque_atual}"}), 400
+                        receita = FichaTecnica.query.filter_by(produto_id=item.produto_id).all()
+                        if not receita: print(f"DEBUG: No recipe for Product {item.produto_id}")
+                        for r in receita:
+                            qtd_necessaria = r.quantidade * item.quantidade
+                            if r.ingrediente.estoque_atual < qtd_necessaria:
+                                return jsonify({"success": False, "message": f"Estoque insuficiente de {r.ingrediente.nome}. Necessário: {qtd_necessaria}, Atual: {r.ingrediente.estoque_atual}"}), 400
                 
                 # Baixa o Estoque
                 print("DEBUG: Deducting Stock...")
                 for item in pedido.itens:
                     if not item.produto_id: continue
-                    
-                    prod = Produto.query.get(item.produto_id)
-                    
-                    # Baixa Revenda
-                    if prod and prod.tipo == 'revenda' and prod.ingrediente_id:
-                        ing = Ingrediente.query.get(prod.ingrediente_id)
-                        if ing:
-                            ing.estoque_atual -= item.quantidade
-                            db.session.add(ing)
-                            print(f"DEBUG: Deducted {item.quantidade} from {ing.nome} (Revenda).")
-                    
-                    # Baixa Fabricado
-                    else:
-                        receita = FichaTecnica.query.filter_by(produto_id=item.produto_id).all()
-                        for r in receita:
-                            qtd_necessaria = r.quantidade * item.quantidade
-                            r.ingrediente.estoque_atual -= qtd_necessaria
-                            print(f"DEBUG: Deducted {qtd_necessaria} from {r.ingrediente.nome}. New Stock: {r.ingrediente.estoque_atual}")
-                            db.session.add(r.ingrediente) # Marca para update
+                    receita = FichaTecnica.query.filter_by(produto_id=item.produto_id).all()
+                    for r in receita:
+                        qtd_necessaria = r.quantidade * item.quantidade
+                        r.ingrediente.estoque_atual -= qtd_necessaria
+                        print(f"DEBUG: Deducted {qtd_necessaria} from {r.ingrediente.nome}. New Stock: {r.ingrediente.estoque_atual}")
+                        db.session.add(r.ingrediente) # Marca para update
 
             pedido.status = 'concluido'
             
@@ -1256,6 +1298,110 @@ def admin_estoque():
     produtos = Produto.query.order_by(Produto.nome).all()
     return render_template('admin_estoque.html', title='Gestão de Estoque — Pizzaria Colonial', produtos=produtos)
 
+@app.route('/admin/estoque/baixo')
+def admin_estoque_baixo():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+        
+    # Checa se está habilitado
+    config = {}
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+        except: pass
+        
+    if not config.get('inventory_enabled', False):
+         flash('O módulo de estoque está desativado.', 'warning')
+         return redirect(url_for('admin_dashboard'))
+
+    return render_template('admin_estoque_baixo.html', title='Relatório de Baixo Estoque — Pizzaria Colonial')
+
+@app.route('/api/admin/reservas', methods=['GET'])
+def api_admin_reservas():
+    if not session.get('logged_in'):
+        return jsonify([]), 401
+    
+    # Busca reservas futuras ou recentes (últimos 7 dias)
+    # Para simplificar, trazemos todas ordenadas por data desc
+    reservas = Reserva.query.order_by(Reserva.data_reserva.desc(), Reserva.hora_reserva.desc()).all()
+    
+    return jsonify([{
+        "id": r.id,
+        "nome": r.nome_cliente,
+        "telefone": r.telefone,
+        "data": r.data_reserva.strftime('%d/%m/%Y'),
+        "hora": r.hora_reserva.strftime('%H:%M'),
+        "pessoas": r.num_pessoas,
+        "obs": r.observacao,
+        "status": r.status
+    } for r in reservas])
+
+@app.route('/api/admin/reservas/status', methods=['POST'])
+def api_admin_reservas_status():
+    if not session.get('logged_in'):
+        return jsonify({"success": False}), 401
+        
+    data = request.get_json()
+    reserva = Reserva.query.get(data.get('id'))
+    if reserva:
+        reserva.status = data.get('status')
+        db.session.commit()
+        log_activity(f"Alterou status da reserva #{reserva.id} para {reserva.status}")
+        return jsonify({"success": True})
+        
+    return jsonify({"success": False, "message": "Reserva não encontrada"}), 404
+
+@app.route('/api/admin/depoimentos', methods=['GET'])
+def api_admin_depoimentos():
+    if not session.get('logged_in'):
+        return jsonify([]), 401
+    
+    # Lista depoimentos ordenados por data (mais recentes primeiro)
+    depoimentos = Depoimento.query.order_by(Depoimento.data.desc()).all()
+    
+    return jsonify([{
+        "id": d.id,
+        "nome": d.nome,
+        "texto": d.texto,
+        "nota": d.nota,
+        "data": d.data.strftime('%d/%m/%Y %H:%M'),
+        "aprovado": d.aprovado
+    } for d in depoimentos])
+
+@app.route('/api/admin/depoimento/status', methods=['POST'])
+def api_admin_depoimento_status():
+    if not session.get('logged_in'):
+        return jsonify({"success": False}), 401
+    
+    data = request.get_json()
+    d_id = data.get('id')
+    aprovado = data.get('aprovado')
+    
+    depoimento = Depoimento.query.get(d_id)
+    if depoimento:
+        depoimento.aprovado = aprovado
+        db.session.commit()
+        log_activity(f"{'Aprovou' if aprovado else 'Ocultou'} depoimento #{d_id}")
+        return jsonify({"success": True})
+    return jsonify({"success": False, "message": "Depoimento não encontrado"}), 404
+
+@app.route('/api/admin/depoimento', methods=['DELETE'])
+def api_admin_depoimento_delete():
+    if not session.get('logged_in'):
+        return jsonify({"success": False}), 401
+    
+    data = request.get_json()
+    d_id = data.get('id')
+    
+    depoimento = Depoimento.query.get(d_id)
+    if depoimento:
+        db.session.delete(depoimento)
+        db.session.commit()
+        log_activity(f"Excluiu depoimento #{d_id}")
+        return jsonify({"success": True})
+    return jsonify({"success": False, "message": "Depoimento não encontrado"}), 404
+
 @app.route('/admin/config', methods=['GET', 'POST'])
 def admin_config():
     if not session.get('logged_in'):
@@ -1285,6 +1431,8 @@ def admin_config():
             current_config['telefone'] = data.get('telefone')
             current_config['whatsapp'] = data.get('whatsapp')
             current_config['endereco_principal'] = data.get('endereco_principal')
+            current_config['theme'] = data.get('theme')
+            current_config['sobre_nos'] = data.get('sobre_nos')
             
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 json.dump(current_config, f, indent=4, ensure_ascii=False)
@@ -1691,29 +1839,6 @@ def api_admin_banners():
             json.dump(data, f, indent=4)
         log_activity("Atualizou banners da home")
         return jsonify({"success": True})
-
-@app.route('/api/admin/reservas', methods=['GET', 'POST'])
-def api_admin_reservas():
-    if not session.get('logged_in'):
-        return jsonify({"success": False}), 401
-        
-    if request.method == 'GET':
-        if os.path.exists(RESERVATIONS_FILE):
-            with open(RESERVATIONS_FILE, 'r', encoding='utf-8') as f:
-                # Retorna lista invertida (mais recentes primeiro)
-                data = json.load(f)
-                return jsonify(data[::-1])
-        return jsonify([])
-        
-    if request.method == 'POST':
-        # Para atualizar status (ex: confirmar/cancelar)
-        data = request.get_json()
-        if os.path.exists(RESERVATIONS_FILE):
-            with open(RESERVATIONS_FILE, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=4, ensure_ascii=False)
-            log_activity("Atualizou lista de reservas")
-            return jsonify({"success": True})
-        return jsonify({"success": False, "message": "Arquivo não encontrado"}), 404
 
 if __name__ == '__main__':
     app.run(debug=True)

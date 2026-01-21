@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "base_site.html" %}
 
-{% block styles %}
+{% block head %}
 <!-- Leaflet CSS (Mapa) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
@@ -43,14 +43,15 @@
                     <div class="card bg-dark border-secondary text-light unit-card shadow-sm"
                         onclick="focusMap({{ unit.lat }}, {{ unit.lon }})">
                         <div class="card-body">
-                            <h5 class="text-warning mb-2"><i class="bi bi-shop me-2"></i>{{ unit.name }}</h5>
-                            <p class="small text-secondary mb-1"><i class="bi bi-geo-alt me-2"></i>{{ unit.address }}
+                            <h5 class="text-warning mb-2"><i class="fas fa-store me-2"></i>{{ unit.name }}</h5>
+                            <p class="small text-secondary mb-1"><i class="fas fa-map-marker-alt me-2"></i>{{
+                                unit.address }}
                             </p>
-                            <p class="small text-secondary mb-0"><i class="bi bi-telephone me-2"></i>{{ unit.phone }}
+                            <p class="small text-secondary mb-0"><i class="fas fa-phone me-2"></i>{{ unit.phone }}
                             </p>
                             <a href="https://www.google.com/maps/search/?api=1&query={{ unit.lat }},{{ unit.lon }}"
                                 target="_blank" class="btn btn-sm btn-outline-light mt-3 w-100">
-                                <i class="bi bi-map me-1"></i> Abrir no Google Maps
+                                <i class="fas fa-map me-1"></i> Abrir no Google Maps
                             </a>
                         </div>
                     </div>

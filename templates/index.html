@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "base_site.html" %}
 
-{% block styles %}
+{% block head %}
 <style>
     .hero-pizza {
         background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1920&q=80');
@@ -163,7 +163,7 @@
                         servir.</p>
                     {% if site_config.self_service_days %}
                     <div class="mt-3 pt-3 border-top border-secondary">
-                        <p class="text-white small fw-bold mb-0"><i class="bi bi-clock me-2 text-warning"></i>{{
+                        <p class="text-white small fw-bold mb-0"><i class="fas fa-clock me-2 text-warning"></i>{{
                             site_config.self_service_days }}</p>
                     </div>
                     {% endif %}
@@ -182,7 +182,7 @@
                     <p class="text-secondary small">Os melhores cortes selecionados servidos à vontade.</p>
                     {% if site_config.rodizio_carne_days %}
                     <div class="mt-3 pt-3 border-top border-secondary">
-                        <p class="text-white small fw-bold mb-0"><i class="bi bi-clock me-2 text-warning"></i>{{
+                        <p class="text-white small fw-bold mb-0"><i class="fas fa-clock me-2 text-warning"></i>{{
                             site_config.rodizio_carne_days }}</p>
                     </div>
                     {% endif %}
@@ -201,7 +201,7 @@
                     <p class="text-secondary small">Sabores ilimitados, da tradicional à doce.</p>
                     {% if site_config.rodizio_pizza_days %}
                     <div class="mt-3 pt-3 border-top border-secondary">
-                        <p class="text-white small fw-bold mb-0"><i class="bi bi-clock me-2 text-warning"></i>{{
+                        <p class="text-white small fw-bold mb-0"><i class="fas fa-clock me-2 text-warning"></i>{{
                             site_config.rodizio_pizza_days }}</p>
                     </div>
                     {% endif %}
@@ -211,6 +211,75 @@
         {% endif %}
     </div>
 </div>
+
+<section class="py-5 bg-dark border-top border-secondary">
+    <div class="container reveal">
+        <div class="text-center mb-5">
+            <h2 class="text-warning display-5" style="font-family: 'Playfair Display', serif;">O que dizem nossos
+                clientes</h2>
+            <p class="text-secondary">A satisfação de quem ama pizza de verdade.</p>
+        </div>
+        <div class="row g-4">
+            {% if depoimentos %}
+            {% for dep in depoimentos %}
+            <div class="col-md-4">
+                <div class="card bg-black border-secondary text-light h-100 p-3">
+                    <div class="card-body text-center">
+                        <div class="mb-3 text-warning fs-5">
+                            {% for n in range(dep.nota) %}<i class="fas fa-star"></i>{% endfor %}
+                            {% for n in range(5 - dep.nota) %}<i class="far fa-star"></i>{% endfor %}
+                        </div>
+                        <p class="card-text fst-italic">"{{ dep.texto }}"</p>
+                        <footer class="blockquote-footer mt-3 text-secondary">{{ dep.nome }}</footer>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <!-- Fallback se não houver depoimentos -->
+            <div class="col-md-4">
+                <div class="card bg-black border-secondary text-light h-100 p-3">
+                    <div class="card-body text-center">
+                        <div class="mb-3 text-warning fs-5">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
+                                class="fas fa-star"></i><i class="fas fa-star"></i>
+                        </div>
+                        <p class="card-text fst-italic">"A melhor pizza da região! A massa é leve e o recheio é super
+                            generoso. O atendimento também é nota 10."</p>
+                        <footer class="blockquote-footer mt-3 text-secondary">Mariana Souza</footer>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-black border-secondary text-light h-100 p-3">
+                    <div class="card-body text-center">
+                        <div class="mb-3 text-warning fs-5">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
+                                class="fas fa-star"></i><i class="fas fa-star"></i>
+                        </div>
+                        <p class="card-text fst-italic">"O rodízio é incrível, muita variedade e tudo muito saboroso.
+                            Ambiente familiar perfeito para ir com as crianças."</p>
+                        <footer class="blockquote-footer mt-3 text-secondary">Carlos Eduardo</footer>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-black border-secondary text-light h-100 p-3">
+                    <div class="card-body text-center">
+                        <div class="mb-3 text-warning fs-5">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
+                                class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+                        </div>
+                        <p class="card-text fst-italic">"Sempre peço pelo delivery e chega quentinha. O hambúrguer
+                            artesanal também é sensacional!"</p>
+                        <footer class="blockquote-footer mt-3 text-secondary">Fernanda Lima</footer>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
 
 <section class="py-5 bg-black border-top border-secondary">
     <div class="container reveal">
@@ -224,10 +293,11 @@
                 <div class="card h-100 bg-dark border-secondary text-light">
                     <div class="card-body">
                         <h5 class="card-title text-warning mb-3">Colonial 1 (Itaquera)</h5>
-                        <p class="card-text small text-secondary mb-2"><i class="bi bi-geo-alt me-2"></i>Rua Virgínia
+                        <p class="card-text small text-secondary mb-2"><i class="fas fa-map-marker-alt me-2"></i>Rua
+                            Virgínia
                             Ferni, 1758, Conj. Res. José Bonifácio</p>
-                        <p class="card-text small text-secondary"><i class="bi bi-telephone me-2"></i>(11)
-                            2074‑1100<br><i class="bi bi-whatsapp me-2"></i>(11) 91456‑9028</p>
+                        <p class="card-text small text-secondary"><i class="fas fa-phone me-2"></i>(11)
+                            2074‑1100<br><i class="fab fa-whatsapp me-2"></i>(11) 91456‑9028</p>
                     </div>
                 </div>
             </div>

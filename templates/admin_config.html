@@ -1,21 +1,20 @@
-{% extends "base.html" %}
+{% extends "base_admin.html" %}
+
+{% block title %}Configurações - Admin Colonial{% endblock %}
 
 {% block content %}
-<div class="container admin-container">
+<div class="container pb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>⚙️ Configurações do Sistema</h1>
-        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-light">
-            <i class="fas fa-arrow-left"></i> Voltar
-        </a>
+        <h4 class="m-0">⚙️ Configurações do Sistema</h4>
     </div>
 
     <form method="POST" action="{{ url_for('admin_config') }}">
         <div class="row">
             <!-- MÓDULOS -->
             <div class="col-md-6 mb-4">
-                <div class="card bg-dark text-light border-warning h-100">
-                    <div class="card-header border-warning">
-                        <h5 class="mb-0 text-warning"><i class="fas fa-puzzle-piece"></i> Módulos e Funcionalidades</h5>
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0 text-primary"><i class="fas fa-puzzle-piece"></i> Módulos e Funcionalidades</h5>
                     </div>
                     <div class="card-body">
                         <div class="form-check form-switch mb-3">
@@ -37,7 +36,7 @@
                             </label>
                         </div>
 
-                        <hr class="border-secondary">
+                        <hr class="text-muted">
 
                         <div class="form-check form-switch mb-3">
                             <input class="form-check-input" type="checkbox" id="ai_enabled" name="ai_enabled" {% if
@@ -72,30 +71,35 @@
 
             <!-- GERAL -->
             <div class="col-md-6 mb-4">
-                <div class="card bg-dark text-light border-warning h-100">
-                    <div class="card-header border-warning">
-                        <h5 class="mb-0 text-warning"><i class="fas fa-info-circle"></i> Informações Gerais</h5>
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0 text-primary"><i class="fas fa-info-circle"></i> Informações Gerais</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label">Tempo de Espera (Exibido no site)</label>
-                            <input type="text" class="form-control bg-dark text-light border-secondary"
-                                name="tempo_espera" value="{{ config.get('tempo_espera', '') }}">
+                            <label class="form-label text-muted small">Tempo de Espera (Exibido no site)</label>
+                            <input type="text" class="form-control" name="tempo_espera"
+                                value="{{ config.get('tempo_espera', '') }}">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Telefone de Contato</label>
-                            <input type="text" class="form-control bg-dark text-light border-secondary" name="telefone"
+                            <label class="form-label text-muted small">Telefone de Contato</label>
+                            <input type="text" class="form-control" name="telefone"
                                 value="{{ config.get('telefone', '') }}">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">WhatsApp (Apenas números)</label>
-                            <input type="text" class="form-control bg-dark text-light border-secondary" name="whatsapp"
+                            <label class="form-label text-muted small">WhatsApp (Apenas números)</label>
+                            <input type="text" class="form-control" name="whatsapp"
                                 value="{{ config.get('whatsapp', '') }}">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Endereço Principal</label>
-                            <input type="text" class="form-control bg-dark text-light border-secondary"
-                                name="endereco_principal" value="{{ config.get('endereco_principal', '') }}">
+                            <label class="form-label text-muted small">Endereço Principal</label>
+                            <input type="text" class="form-control" name="endereco_principal"
+                                value="{{ config.get('endereco_principal', '') }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">História (Sobre Nós)</label>
+                            <textarea class="form-control" name="sobre_nos" rows="6"
+                                placeholder="Conte a história da pizzaria...">{{ config.get('sobre_nos', '') }}</textarea>
                         </div>
                     </div>
                 </div>
@@ -103,7 +107,7 @@
         </div>
 
         <div class="text-end">
-            <button type="submit" class="btn btn-warning btn-lg"><i class="fas fa-save"></i> Salvar
+            <button type="submit" class="btn btn-success btn-lg shadow"><i class="fas fa-save"></i> Salvar
                 Configurações</button>
         </div>
     </form>
