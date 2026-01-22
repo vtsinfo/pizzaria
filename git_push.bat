@@ -22,7 +22,7 @@ git commit -m "%msg%"
 
 echo.
 echo [3/3] Enviando para o GitHub...
-git push origin main
+git push origin HEAD
 
 echo.
 echo ========================================
