@@ -4,364 +4,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitor de Cozinha - Pizzaria Colonial</title>
+    <title>Cozinha — Monitor de Pedidos</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
             background-color: #212529;
             color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: sans-serif;
         }
 
-        .navbar {
+        .card-pedido {
             background-color: #343a40;
-            border-bottom: 2px solid #ffc107;
+            border: 1px solid #495057;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
 
-        .card-order {
-            background-color: #fff;
-            color: #212529;
-            border-radius: 8px;
-            overflow: hidden;
-            transition: transform 0.2s;
-            height: 100%;
-        }
-
-        .card-order.late {
-            border: 4px solid #dc3545;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
-            }
-
-            70% {
-                box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
-            }
-
-            100% {
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-            }
-        }
-
-        .card-header-order {
-            font-size: 1.2rem;
+        .card-header {
             font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 15px;
+            font-size: 1.25rem;
+            background-color: #343a40;
+            border-bottom: 1px solid #495057;
         }
 
-        .bg-pending {
-            background-color: #ffc107;
-            color: #000;
+        .btn-concluir {
+            width: 100%;
+            font-size: 1.2rem;
+            padding: 10px;
         }
 
-        .bg-prep {
-            background-color: #0d6efd;
-            color: #fff;
+        .item-lista {
+            font-size: 1.1rem;
+            border-bottom: 1px solid #495057;
+            padding: 8px 0;
         }
 
-        .order-items {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .order-items li {
-            padding: 8px 15px;
-            font-size: 1.3rem;
-            /* Fonte Grande para Leitura */
-            border-bottom: 1px solid #dee2e6;
-            font-weight: 500;
-        }
-
-        .order-items li:last-child {
+        .item-lista:last-child {
             border-bottom: none;
         }
 
-        .order-obs {
-            background-color: #fff3cd;
-            color: #856404;
-            padding: 10px;
-            font-weight: bold;
-            font-size: 1.1rem;
-            margin-top: auto;
+        .badge-timer {
+            font-size: 0.9rem;
         }
 
-        .card-actions {
-            padding: 10px;
-            background-color: #f8f9fa;
+        .new-order-highlight {
+            animation: pulse-yellow 2s infinite;
+            border: 2px solid #ffc107;
         }
 
-        .timer {
-            font-family: monospace;
-            font-size: 1.4rem;
-        }
+        @keyframes pulse-yellow {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+            }
 
-        /* Estilo para quando não há pedidos */
-        .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 80vh;
-            color: #6c757d;
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+            }
         }
     </style>
 </head>
 
 <body>
-    <div id="app">
-        <nav class="navbar navbar-dark mb-4">
-            <div class="container-fluid">
-                <span class="navbar-brand mb-0 h1"><i class="fas fa-fire me-2"></i>Cozinha - Pizzaria Colonial</span>
-                <div class="d-flex align-items-center gap-3">
-                    <button class="btn btn-outline-warning btn-sm" @click="toggleView">
-                        <i class="fas" :class="viewMode === 'grid' ? 'fa-list' : 'fa-th-large'"></i>
-                        <span v-text="viewMode === 'grid' ? 'Lista' : 'Grade'"></span>
-                    </button>
-                    <div class="text-white" style="font-size: 1.2rem;">
-                        <span id="clock" class="fw-bold"></span>
-                    </div>
-                    <a href="/admin/dashboard" class="btn btn-outline-light btn-sm">Sair</a>
-                </div>
+    <div class="container-fluid p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3 border-secondary">
+            <h1 class="h2">🧑‍🍳 Monitor de Cozinha</h1>
+            <div class="d-flex align-items-center gap-3">
+                <span id="last-updated" class="text-muted small">Atualizado: --:--:--</span>
+                <button id="btn-enable-sound" class="btn btn-outline-warning btn-sm">
+                    🔇 Ativar Som
+                </button>
             </div>
-        </nav>
+        </div>
 
-        <div class="container-fluid">
-            {% raw %}
-            <!-- Loading -->
-            <div v-if="loading" class="text-center py-5">
-                <div class="spinner-border text-warning" style="width: 3rem; height: 3rem;" role="status"></div>
+        <div id="orders-container" class="row">
+            <div class="col-12 text-center mt-5">
+                <div class="spinner-border text-warning" role="status"></div>
+                <p class="mt-2 text-muted">Carregando pedidos...</p>
             </div>
+        </div>
+    </div>
 
-            <!-- Empty State -->
-            <div v-else-if="kitchenOrders.length === 0" class="empty-state">
-                <i class="fas fa-utensils fa-4x mb-3"></i>
-                <h2>Tudo limpo na cozinha!</h2>
-                <p class="lead">Aguardando novos pedidos...</p>
-            </div>
+    <!-- Som de Alerta (Sino de Cozinha) -->
+    <audio id="alert-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+        preload="auto"></audio>
 
-            <div v-else>
-                <!-- GRID VIEW -->
-                <div v-if="viewMode === 'grid'" class="row g-3">
-                    <div v-for="order in kitchenOrders" :key="order.id" class="col-12 col-md-6 col-lg-4 col-xl-3">
-                        <div class="card-order d-flex flex-column" :class="{ 'late': isLate(order) }">
+    <script>
+        let currentOrders = [];
+        let knownOrderIds = [];
+        let audioEnabled = false;
+        const sound = document.getElementById('alert-sound');
+        const btnSound = document.getElementById('btn-enable-sound');
+        const container = document.getElementById('orders-container');
 
-                            <!-- Cabeçalho -->
-                            <div class="card-header-order"
-                                :class="order.status === 'Pendente' ? 'bg-pending' : 'bg-prep'">
-                                <span>#{{ order.id }} <small>{{ order.method }}</small></span>
-                                <span class="timer">{{ getElapsedTime(order.timestamp) }}</span>
+        // Configuração do Som (Browser Policy exige interação do usuário)
+        btnSound.addEventListener('click', () => {
+            audioEnabled = !audioEnabled;
+            if (audioEnabled) {
+                btnSound.innerHTML = "🔊 Som Ativado";
+                btnSound.classList.replace('btn-outline-warning', 'btn-success');
+                // Toca brevemente para desbloquear o áudio no navegador
+                sound.volume = 1.0;
+                sound.play().then(() => {
+                    setTimeout(() => { sound.pause(); sound.currentTime = 0; }, 500);
+                }).catch(e => console.warn("Erro ao iniciar áudio:", e));
+            } else {
+                btnSound.innerHTML = "🔇 Ativar Som";
+                btnSound.classList.replace('btn-success', 'btn-outline-warning');
+            }
+        });
+
+        function fetchOrders() {
+            fetch('/api/admin/pedidos')
+                .then(r => r.json())
+                .then(data => {
+                    currentOrders = data;
+                    updateInterface(data);
+                    document.getElementById('last-updated').innerText = 'Atualizado: ' + new Date().toLocaleTimeString();
+                })
+                .catch(e => console.error("Erro de conexão:", e));
+        }
+
+        function updateInterface(orders) {
+            const currentIds = orders.map(o => o.id);
+
+            // Verifica novos pedidos para tocar som
+            if (knownOrderIds.length > 0) {
+                const newOrders = currentIds.filter(id => !knownOrderIds.includes(id));
+                if (newOrders.length > 0 && audioEnabled) {
+                    sound.currentTime = 0;
+                    sound.play().catch(e => console.error("Autoplay bloqueado:", e));
+                }
+            }
+            knownOrderIds = currentIds;
+
+            // Renderização
+            if (orders.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center text-muted mt-5">
+                        <h3 class="opacity-50">Nenhum pedido pendente ✅</h3>
+                        <p>Aguardando novos pedidos...</p>
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            orders.forEach(order => {
+                // Itens
+                let itemsHtml = order.items.map(item =>
+                    `<div class="item-lista d-flex justify-content-between">
+                        <span><strong>${item.quantity}x</strong> ${item.name}</span>
+                     </div>`
+                ).join('');
+
+                // Badge de Tempo
+                const timeParts = order.timestamp.split(' ')[1].split(':');
+                const timeStr = `${timeParts[0]}:${timeParts[1]}`;
+
+                html += `
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="card card-pedido">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>#${order.id} <small class="fw-normal text-muted">${order.customer.split(' ')[0]}</small></span>
+                                <span class="badge bg-dark border border-secondary badge-timer">🕒 ${timeStr}</span>
                             </div>
-
-                            <!-- Corpo -->
-                            <div class="flex-grow-1 d-flex flex-column">
-                                <ul class="order-items">
-                                    <li v-for="(item, idx) in order.items" :key="idx">
-                                        {{ item.quantity || 1 }}x {{ item.name }}
-                                    </li>
-                                </ul>
-
-                                <!-- Observações -->
-                                <div v-if="order.obs" class="order-obs">
-                                    <i class="fas fa-exclamation-circle"></i> {{ order.obs }}
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    ${itemsHtml}
                                 </div>
-                            </div>
-
-                            <!-- Ações -->
-                            <div class="card-actions d-grid gap-2">
-                                <button v-if="order.status === 'Pendente'" class="btn btn-primary btn-lg fw-bold"
-                                    @click="advanceStatus(order, 'Em Preparo')">
-                                    <i class="fas fa-fire"></i> INICIAR
+                                ${order.obs ? `<div class="alert alert-warning p-2 mb-2"><small>📝 ${order.obs}</small></div>` : ''}
+                                <div class="text-center mb-3">
+                                    <span class="badge ${order.method === 'Entrega' ? 'bg-info text-dark' : 'bg-secondary'}">${order.method}</span>
+                                </div>
+                                <button onclick="imprimirPedido(${order.id})" class="btn btn-outline-light w-100 mb-2">
+                                    🖨️ Imprimir
                                 </button>
-
-                                <button v-if="order.status === 'Em Preparo'" class="btn btn-success btn-lg fw-bold"
-                                    @click="advanceStatus(order, 'Pronto')">
-                                    <i class="fas fa-check"></i> PRONTO
+                                <button onclick="concluirPedido(${order.id})" class="btn btn-success btn-concluir">
+                                    ✅ Pronto
                                 </button>
                             </div>
                         </div>
                     </div>
-                </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
 
-                <!-- LIST VIEW -->
-                <div v-else class="table-responsive">
-                    <table class="table table-dark table-hover align-middle" style="font-size: 1.1rem;">
-                        <thead>
-                            <tr class="text-warning">
-                                <th>#</th>
-                                <th>Tempo</th>
-                                <th>Tipo</th>
-                                <th>Itens do Pedido</th>
-                                <th>Obs</th>
-                                <th class="text-end">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="order in kitchenOrders" :key="order.id"
-                                :class="{ 'table-danger': isLate(order) }">
-                                <td class="fw-bold">#{{ order.id }}</td>
-                                <td class="fw-bold font-monospace text-warning">{{ getElapsedTime(order.timestamp) }}
-                                </td>
-                                <td>
-                                    <span class="badge"
-                                        :class="order.method === 'Entrega' ? 'bg-danger' : 'bg-info text-dark'">
-                                        {{ order.method }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <ul class="list-unstyled mb-0">
-                                        <li v-for="(item, idx) in order.items" :key="idx">
-                                            • <strong>{{ item.quantity || 1 }}x</strong> {{ item.name }}
-                                        </li>
-                                    </ul>
-                                </td>
-                                <td class="text-warning fst-italic">{{ order.obs || '-' }}</td>
-                                <td class="text-end">
-                                    <button v-if="order.status === 'Pendente'"
-                                        class="btn btn-primary btn-sm fw-bold px-3 py-2"
-                                        @click="advanceStatus(order, 'Em Preparo')">
-                                        INICIAR
-                                    </button>
-                                    <button v-if="order.status === 'Em Preparo'"
-                                        class="btn btn-success btn-sm fw-bold px-3 py-2"
-                                        @click="advanceStatus(order, 'Pronto')">
-                                        PRONTO
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            {% endraw %}
-        </div>
+        function concluirPedido(id) {
+            if (!confirm('Confirmar que o pedido #' + id + ' está pronto?')) return;
 
-        <!-- Áudio de Notificação -->
-        <audio id="bell" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
-    </div>
+            fetch('/api/admin/pedido/concluir', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) fetchOrders();
+                    else alert('Erro ao concluir pedido.');
+                });
+        }
 
-    <!-- Vue.js 3 -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script>
-        const { createApp } = Vue;
+        function imprimirPedido(id) {
+            const order = currentOrders.find(o => o.id === id);
+            if (!order) return;
 
-        createApp({
-            data() {
-                return {
-                    orders: [],
-                    loading: true,
-                    currentTime: new Date(),
-                    lastOrderId: null,
-                    viewMode: localStorage.getItem('kitchenViewMode') || 'grid'
-                }
-            },
-            computed: {
-                kitchenOrders() {
-                    // Filtra apenas Pendente (Novo) e Em Preparo
-                    return this.orders.filter(o =>
-                        o.status === 'Pendente' ||
-                        !o.status ||
-                        o.status === 'Em Preparo'
-                    );
-                }
-            },
-            mounted() {
-                this.fetchOrders();
-                // Clock Update
-                setInterval(() => { this.currentTime = new Date(); }, 1000);
-                this.updateClock();
-                // Polling Pedidos (5s)
-                setInterval(this.fetchOrders, 5000);
-                // Timer Update UI (1m)
-                setInterval(() => { this.$forceUpdate(); }, 60000);
-            },
-            methods: {
-                toggleView() {
-                    this.viewMode = this.viewMode === 'grid' ? 'list' : 'grid';
-                    localStorage.setItem('kitchenViewMode', this.viewMode);
-                },
-                updateClock() {
-                    const el = document.getElementById('clock');
-                    if (el) el.innerText = this.currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                },
-                async fetchOrders() {
-                    try {
-                        const res = await fetch('/api/admin/pedidos');
-                        const data = await res.json();
+            const itemsHtml = order.items.map(item =>
+                `<div>${item.quantity}x ${item.name}</div>`
+            ).join('');
 
-                        // Detecta novo pedido para tocar som
-                        const pendentes = data.filter(o => o.status === 'Pendente' || !o.status);
-                        if (pendentes.length > 0) {
-                            const newest = pendentes[0];
-                            // Lógica simples: se o ID do mais recente mudou e é maior que o anterior
-                            if (this.lastOrderId && newest.id > this.lastOrderId) {
-                                this.playSound();
-                            }
-                            this.lastOrderId = newest.id;
-                        } else {
-                            // Se não tem pendentes, atualiza o lastId com o maior geral para evitar som na reinicialização
-                            if (data.length > 0) this.lastOrderId = Math.max(...data.map(o => o.id));
-                        }
+            const html = `
+                <html>
+                <head>
+                    <title>Pedido #${order.id}</title>
+                    <style>
+                        body { font-family: monospace; width: 300px; font-size: 14px; margin: 0; padding: 10px; }
+                        .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+                        .items { border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+                        .obs { font-weight: bold; margin-top: 10px; font-size: 16px; }
+                        @media print { .no-print { display: none; } }
+                        .btn-close { margin-top: 15px; width: 100%; padding: 10px; background: #333; color: white; border: none; cursor: pointer; font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h2>PEDIDO #${order.id}</h2>
+                        <p>${order.customer}<br>${order.timestamp}</p>
+                        <p><strong>${order.method}</strong></p>
+                    </div>
+                    <div class="items">${itemsHtml}</div>
+                    ${order.obs ? `<div class="obs">OBS: ${order.obs}</div>` : ''}
+                    <button class="no-print btn-close" onclick="window.close()">Fechar Janela</button>
+                    <script>window.onload = function() { window.print(); }<\/script>
+                </body>
+                </html>`;
 
-                        this.orders = data;
-                        this.loading = false;
-                    } catch (e) { console.error(e); }
-                },
-                playSound() {
-                    const audio = document.getElementById('bell');
-                    audio.currentTime = 0;
-                    audio.play().catch(e => console.log("Interação necessária para tocar som"));
-                },
-                async advanceStatus(order, newStatus) {
-                    let finalStatus = newStatus;
-                    if (newStatus === 'Pronto') {
-                        finalStatus = 'Pronto para Retirada'; // Mesmo para entrega, sai da tela da cozinha
-                    }
+            const win = window.open('', '_blank', 'width=350,height=600');
+            win.document.write(html);
+            win.document.close();
+        }
 
-                    try {
-                        await fetch('/api/admin/pedido/status', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ id: order.id, status: finalStatus })
-                        });
-                        // Atualização otimista
-                        order.status = finalStatus;
-                    } catch (e) {
-                        alert('Erro ao atualizar status');
-                    }
-                },
-                getElapsedTime(timestampStr) {
-                    try {
-                        // timestampStr format: "dd/mm/yyyy HH:MM:SS"
-                        const [datePart, timePart] = timestampStr.split(' ');
-                        const [day, month, year] = datePart.split('/');
-                        const [hour, min, sec] = timePart.split(':');
-                        const orderDate = new Date(year, month - 1, day, hour, min, sec);
-
-                        const diffMs = this.currentTime - orderDate;
-                        const diffMins = Math.floor(diffMs / 60000);
-
-                        if (diffMins < 60) return `${diffMins} min`;
-                        const hours = Math.floor(diffMins / 60);
-                        const mins = diffMins % 60;
-                        return `${hours}h ${mins}m`;
-                    } catch (e) { return '--'; }
-                },
-                isLate(order) {
-                    const timeStr = this.getElapsedTime(order.timestamp);
-                    if (timeStr.includes('h')) return true; // Mais de 1 hora
-                    const mins = parseInt(timeStr);
-                    return mins > 20; // Alerta se passar de 20 min na cozinha
-                }
-            }
-        }).mount('#app');
+        // Polling a cada 10 segundos
+        setInterval(fetchOrders, 10000);
+        fetchOrders();
     </script>
 </body>
 

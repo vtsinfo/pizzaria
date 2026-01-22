@@ -14,12 +14,15 @@ def index():
         banners = [{
             "title": b.titulo, 
             "subtitle": b.descricao, 
-            "image": b.imagem_url
+            "image": b.imagem_url,
+            "link_text": b.link_text,
+            "link_url": b.link_url
         } for b in banners_db]
     except Exception as e:
         print(f"Erro ao carregar banners: {e}")
         
-    return render_template('index.html', title='Pizzaria Colonial', banners=banners)
+    categorias = Categoria.query.filter_by(visivel=True).order_by(Categoria.ordem).all()
+    return render_template('index.html', title='Pizzaria Colonial', banners=banners, categorias=categorias)
 
 @public_bp.route('/cardapio')
 def cardapio():
@@ -49,3 +52,7 @@ def reservas():
 @public_bp.route('/unidades')
 def unidades():
     return render_template('unidades.html', title='Nossas Unidades')
+
+@public_bp.route('/sobre')
+def sobre():
+    return render_template('sobre.html', title='Sobre Nós')

@@ -48,7 +48,8 @@
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
-                            <li><a class="dropdown-item" href="/cozinha" target="_blank"><i class="fas fa-tv"></i>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.monitor_cozinha') }}"
+                                    target="_blank"><i class="fas fa-tv"></i>
                                     Monitor Cozinha (KDS)</a></li>
                         </ul>
                     </li>
@@ -60,9 +61,9 @@
                             <i class="fas fa-box-open"></i> Gestão
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark">
-                            <li><a class="dropdown-item" href="/admin">Cardápio (Produtos)</a></li>
+                            <li><a class="dropdown-item" href="/admin/produtos">Produtos & Receitas</a></li>
                             {% if site_config.inventory_enabled %}
-                            <li><a class="dropdown-item" href="/admin/estoque">Estoque (Insumos)</a></li>
+                            <li><a class="dropdown-item" href="/admin/estoque">Ingredientes (Estoque)</a></li>
                             {% endif %}
                             <li><a class="dropdown-item" href="/admin/motoboys">Motoboys</a></li>
                         </ul>
@@ -76,9 +77,16 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark">
                             <li><a class="dropdown-item" href="/admin/banners">Banners da Home</a></li>
-                            <li><a class="dropdown-item" href="/admin/cupons">Cupons de Desconto</a></li>
-                            <li><a class="dropdown-item" href="/admin/promocoes">Promoções Automáticas</a></li>
+                            <li><a class="dropdown-item" href="/admin/estoque">Gerenciar Ingredientes</a></li>
+                            <li><a class="dropdown-item" href="/admin/compras">Compras / Entrada</a></li>
+                            <li><a class="dropdown-item" href="/admin/estoque/baixo">Relatório Baixo Estoque</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="/admin/fornecedores">Cadastro de Fornecedores</a></li>
                             <li><a class="dropdown-item" href="/admin/depoimentos">Depoimentos</a></li>
+                            <li><a class="dropdown-item" href="/admin/cupons">Cupons de Desconto</a></li>
+                            <li><a class="dropdown-item" href="/admin/promocoes">Promoções Agendadas</a></li>
                         </ul>
                     </li>
 
@@ -95,7 +103,7 @@
                                 <hr class="dropdown-divider">
                             </li>
                             <li><a class="dropdown-item" href="/admin/config"><i class="fas fa-sliders-h"></i>
-                                    Configurações</a></li>
+                                    Configurações (Loja)</a></li>
                         </ul>
                     </li>
                 </ul>

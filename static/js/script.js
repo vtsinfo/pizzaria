@@ -6,8 +6,39 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function initAIWidget() {
-    const widget = document.getElementById('ai-widget-container');
-    if (!widget) return;
+    let widget = document.getElementById('ai-widget-container');
+
+    // Garante que o widget exista no DOM (Injeção Automática se faltar no HTML)
+    if (!widget) {
+        widget = document.createElement('div');
+        widget.id = 'ai-widget-container';
+        widget.innerHTML = `
+            <button id="ai-toggle-btn" class="ai-toggle-btn" aria-label="Abrir Assistente">
+                <span style="font-size: 28px;">🤖</span>
+            </button>
+            <div class="ai-notification-badge" style="display: none;"></div>
+            <div class="ai-chat-window">
+                <div class="ai-header">
+                    <span>Assistente <span id="ai-assistant-name">Val</span></span>
+                    <div>
+                        <button id="clear-ai-btn" title="Limpar Conversa">🗑️</button>
+                        <button id="close-ai-btn" title="Fechar">✖</button>
+                    </div>
+                </div>
+                <div id="ai-messages" class="ai-messages"></div>
+                <div class="ai-suggestions">
+                    <div class="ai-chip">Cardápio</div>
+                    <div class="ai-chip">Promoções</div>
+                    <div class="ai-chip">Entregam aqui?</div>
+                </div>
+                <div class="ai-input-area">
+                    <input type="text" id="ai-input" placeholder="Carregando..." disabled>
+                    <button id="ai-send-btn" disabled>➤</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(widget);
+    }
 
     const toggleBtn = document.getElementById('ai-toggle-btn');
     const closeBtn = document.getElementById('close-ai-btn');
@@ -38,6 +69,14 @@ function initAIWidget() {
             if (data.units && Array.isArray(data.units)) units = data.units;
             // Store global config for voice access
             window.siteConfig = data;
+
+            // Atualiza nome do assistente na interface (garante visualização mesmo sem áudio)
+            const nameEl = document.getElementById('ai-assistant-name');
+            if (nameEl) {
+                const gender = data.voice_gender || 'female';
+                nameEl.innerText = (gender === 'male') ? "Diovani" : "Val";
+            }
+
             // Fallback se não houver unidades configuradas
             if (units.length === 0) {
                 units = [{ name: "Unidade Principal", lat: -23.5505, lon: -46.6333, address: "Endereço não configurado", phone: "5511999999999" }];
@@ -1299,7 +1338,7 @@ function speakWelcome() {
             selectedVoice = voices.find(v => v.lang.includes('pt-BR') && (v.name.includes('Google') || v.name.includes('Luciana') || v.name.includes('Female')));
         } else {
             selectedVoice = voices.find(v => v.lang.includes('pt-BR') && (v.name.includes('Daniel') || v.name.includes('Male')));
-            assistantName = "Giovani";
+            assistantName = "Diovani";
         }
 
         // Atualiza Nome na UI
@@ -1311,7 +1350,7 @@ function speakWelcome() {
 
         if (selectedVoice) utterance.voice = selectedVoice;
 
-        const text = `Olá! Bem-vindo à Pizzaria Colonial. Eu sou ${assistantName === 'Val' ? 'a Val' : 'o Giovani'}, seu assistente virtual.`;
+        const text = `Olá! Bem-vindo à Pizzaria Colonial. Eu sou ${assistantName === 'Val' ? 'a Val' : 'o Diovani'}, seu assistente virtual.`;
         utterance.text = text;
 
         window.speechSynthesis.speak(utterance);

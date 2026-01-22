@@ -12,7 +12,8 @@ from datetime import datetime
 from collections import Counter
 from flask_sqlalchemy import SQLAlchemy     # Novo
 from database import db, init_db   # Novo
-from models import User, Categoria, Produto, Pedido, ItemPedido, Ingrediente, FichaTecnica, Cupom, Fidelidade, Banner
+from sqlalchemy import text
+from models import User, Categoria, Produto, Pedido, ItemPedido, Ingrediente, FichaTecnica, Cupom, Fidelidade, Banner, Fornecedor, Compra, ItemCompra
 app = Flask(__name__)
 # Em produção, use: os.environ.get('SECRET_KEY')
 app.secret_key = os.environ.get('SECRET_KEY', 'vts_pizzaria_dev_key_change_me')
@@ -42,6 +43,15 @@ app.register_blueprint(admin_bp)
 # Migração de Fidelidade JSON -> SQL
 with app.app_context():
     db.create_all() # Garante que TODAS as tabelas (incluindo Banner) existam
+
+    # Migração de Schema (Adicionar colunas novas manualmente em SQLite)
+    try:
+        with db.engine.connect() as conn:
+            conn.execute(text("ALTER TABLE ingredientes ADD COLUMN validade DATE"))
+            conn.commit()
+    except Exception:
+        pass
+
     if os.path.exists(os.path.join(os.path.dirname(__file__), 'fidelidade.json')):
         try:
             if Fidelidade.query.count() == 0:
@@ -83,7 +93,9 @@ def inject_site_config():
         "ai_enabled": True, # Assistente ativado por padrão
         "voice_gender": "female", # 'female' ou 'male'
         "instagram": "",
-        "facebook": ""
+        "facebook": "",
+        "tipo_forno": "Forno Especial",
+        "sobre_nos": "A Pizzaria Colonial nasceu do sonho de unir tradição e qualidade em um ambiente familiar. Começamos com muita paixão e hoje somos referência na região, conhecidos pela massa crocante e ingredientes selecionados."
     }
     try:
         if os.path.exists(CONFIG_FILE):
@@ -92,7 +104,8 @@ def inject_site_config():
                 default_config.update(saved_config)
     except Exception:
         pass # Garante que falhas no arquivo de config não tirem o site do ar
-    return dict(site_config=default_config)
+    default_config['voice_gender'] = 'male' # Forçar Diovani para teste
+    return dict(site_config=default_config, now=datetime.now())
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -713,75 +726,34 @@ def admin_dashboard():
         
     return render_template('admin_dashboard.html', title='Dashboard — Pizzaria Colonial', inventory_enabled=inventory_enabled)
 
-@app.route('/admin/estoque')
-def admin_estoque():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-        
-    # Checa se está habilitado
-    config = {}
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-        except: pass
-        
-    if not config.get('inventory_enabled', False):
-         flash('O módulo de estoque está desativado.', 'warning')
-         return redirect(url_for('admin_dashboard'))
+@app.route('/api/config/geral', methods=['GET', 'POST'])
+def api_config_geral():
+    # Helper para carregar config
+    def load_cfg():
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except: pass
+        return {}
 
-    # Carrega produtos para o dropdown de ficha técnica
-    produtos = Produto.query.order_by(Produto.nome).all()
-    return render_template('admin_estoque.html', title='Gestão de Estoque — Pizzaria Colonial', produtos=produtos)
+    if request.method == 'GET':
+        return jsonify(load_cfg())
 
-@app.route('/admin/config', methods=['GET', 'POST'])
-def admin_config():
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-        
     if request.method == 'POST':
         try:
-            # Carrega config atual
-            current_config = {}
-            if os.path.exists(CONFIG_FILE):
-                with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                    current_config = json.load(f)
+            data = request.get_json()
+            current_config = load_cfg()
             
-            # Atualiza com dados do form
-            data = request.form
-            
-            # Checkbox html: se não marcado, não vem no form.
-            current_config['inventory_enabled'] = 'inventory_enabled' in data
-            current_config['allow_negative_stock'] = 'allow_negative_stock' in data
-            current_config['ai_enabled'] = 'ai_enabled' in data
-            current_config['self_service_enabled'] = 'self_service_enabled' in data
-            current_config['rodizio_pizza_enabled'] = 'rodizio_pizza_enabled' in data
-            current_config['rodizio_carne_enabled'] = 'rodizio_carne_enabled' in data
-            
-            # Campos de texto
-            current_config['tempo_espera'] = data.get('tempo_espera')
-            current_config['telefone'] = data.get('telefone')
-            current_config['whatsapp'] = data.get('whatsapp')
-            current_config['endereco_principal'] = data.get('endereco_principal')
+            # Merge configs
+            current_config.update(data)
             
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 json.dump(current_config, f, indent=4, ensure_ascii=False)
                 
-            flash('Configurações salvas com sucesso!', 'success')
-            return redirect(url_for('admin_config'))
-            
+            return jsonify({"success": True})
         except Exception as e:
-            flash(f'Erro ao salvar: {str(e)}', 'danger')
-    
-    # GET: Carrega config para exibir
-    config = {}
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-        except: pass
-        
-    return render_template('admin_config.html', title='Configurações — Pizzaria Colonial', config=config)
+            return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route('/api/admin/stats')
 def admin_stats():
@@ -844,6 +816,63 @@ def admin_stats_categories():
         "labels": list(category_counts.keys()),
         "values": list(category_counts.values())
     })
+
+# --- Cozinha API ---
+
+@app.route('/api/admin/pedidos')
+def api_admin_pedidos_list():
+    if not session.get('logged_in'):
+        return jsonify([]), 401
+    
+    # Retorna pedidos não concluídos (Pendente, Em Preparo, Pronto)
+    # Ordenados por ID (cronológico)
+    pedidos = Pedido.query.filter(Pedido.status != 'concluido').order_by(Pedido.id).all()
+    
+    result = []
+    for p in pedidos:
+        meta = {}
+        if p.metadata_json:
+            try: meta = json.loads(p.metadata_json)
+            except: pass
+            
+        items = []
+        for i in p.itens:
+            items.append({
+                "name": i.produto_nome,
+                "quantity": i.quantidade # Frontend espera quantity
+            })
+            
+        result.append({
+            "id": p.id,
+            "timestamp": p.data_hora.strftime("%d/%m/%Y %H:%M:%S") if p.data_hora else "",
+            "customer": p.cliente_nome,
+            "method": meta.get('metodo_envio', 'Balcão'),
+            "status": p.status, # Pendente, Em Preparo, Pronto
+            "obs": meta.get('obs', ''),
+            "items": items
+        })
+        
+    return jsonify(result)
+
+@app.route('/api/admin/pedido/status', methods=['POST'])
+def api_admin_pedido_status():
+    if not session.get('logged_in'):
+        return jsonify({"success": False}), 401
+        
+    data = request.get_json()
+    order_id = data.get('id')
+    new_status = data.get('status')
+    
+    try:
+        pedido = Pedido.query.get(order_id)
+        if pedido:
+            pedido.status = new_status
+            db.session.commit()
+            log_activity(f"Atualizou status do pedido #{pedido.id} para {new_status}")
+            return jsonify({"success": True})
+        return jsonify({"success": False, "message": "Pedido não encontrado"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route('/api/admin/stats/clients')
 def admin_stats_clients():
@@ -1070,28 +1099,7 @@ def api_categorias():
 
 # --- Configurações Gerais e Fidelidade ---
 
-@app.route('/api/config/geral', methods=['GET', 'POST'])
-def api_config_geral():
-    # Endpoint unificado para configurações da loja
-    if request.method == 'POST':
-        if not session.get('logged_in'):
-            return jsonify({"success": False}), 401
-        data = request.get_json()
-        config = {}
-        if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-        
-        config.update(data) # Atualiza/Mescla com os dados novos
-        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(config, f, indent=4)
-        return jsonify({"success": True})
-    
-    # GET
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-            return jsonify(json.load(f))
-    return jsonify({})
+
 
 
 @app.route('/api/admin/banners', methods=['GET', 'POST'])
@@ -1157,6 +1165,36 @@ def api_admin_reservas():
             log_activity("Atualizou lista de reservas")
             return jsonify({"success": True})
         return jsonify({"success": False, "message": "Arquivo não encontrado"}), 404
+
+# --- Rotas da Cozinha (Adicionadas para correção) ---
+
+@app.route('/cozinha')
+def monitor_cozinha_direct():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('cozinha.html')
+
+@app.route('/api/admin/pedido/concluir', methods=['POST'])
+def concluir_pedido():
+    if not session.get('logged_in'):
+        return jsonify({"success": False}), 401
+    
+    data = request.get_json()
+    pedido = Pedido.query.get(data.get('id'))
+    if pedido:
+        pedido.status = 'concluido'
+        # Lógica de fidelidade SQL
+        phone = ''.join(filter(str.isdigit, pedido.cliente_telefone or ''))
+        if phone:
+            fid = Fidelidade.query.filter_by(telefone=phone).first()
+            pontos = int(pedido.total)
+            if fid: fid.pontos += pontos
+            else: db.session.add(Fidelidade(telefone=phone, pontos=pontos))
+        
+        db.session.commit()
+        log_activity(f"Concluiu pedido #{pedido.id}")
+        return jsonify({"success": True})
+    return jsonify({"success": False}, 404)
 
 if __name__ == '__main__':
     app.run(debug=True)

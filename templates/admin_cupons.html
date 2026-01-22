@@ -74,7 +74,7 @@
     let coupons = {};
 
     async function loadCoupons() {
-        const res = await fetch('/api/admin/cupons');
+        const res = await fetch('/admin/api/cupons');
         coupons = await res.json();
         renderTable();
     }
@@ -124,7 +124,7 @@
     }
 
     async function saveCoupons() {
-        await fetch('/api/admin/cupons/save', {
+        await fetch('/admin/api/cupons/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(coupons)

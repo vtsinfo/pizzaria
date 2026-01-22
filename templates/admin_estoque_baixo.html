@@ -6,9 +6,14 @@
 <div class="container pb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="m-0"><i class="fas fa-exclamation-triangle text-danger"></i> Relatório de Baixo Estoque</h4>
-        <a href="/admin/estoque" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Voltar para Estoque
-        </a>
+        <div>
+            <button onclick="sendEmail()" class="btn btn-warning me-2">
+                <i class="fas fa-envelope"></i> Enviar por E-mail
+            </button>
+            <a href="/admin/estoque" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        </div>
     </div>
 
     <div class="card shadow-sm border-danger">
@@ -29,9 +34,32 @@
                         </tr>
                     </thead>
                     <tbody id="table-body">
-                        <tr>
-                            <td colspan="6" class="text-center py-4">Carregando...</td>
+                        {% if ingredientes %}
+                        {% for item in ingredientes %}
+                        <tr class="{{ 'table-danger' if item.estoque_atual <= 0 else '' }}">
+                            <td class="fw-bold">{{ item.nome }}</td>
+                            <td><span class="badge bg-secondary">{{ item.tipo }}</span></td>
+                            <td class="text-center fs-5 fw-bold">{{ item.estoque_atual }} <small
+                                    class="fs-6 fw-normal text-muted">{{ item.unidade }}</small></td>
+                            <td class="text-center">{{ item.estoque_minimo }} <small class="text-muted">{{ item.unidade
+                                    }}</small></td>
+                            <td class="text-center">
+                                {% if item.estoque_atual <= 0 %}<span class="badge bg-dark">Zerado</span>{% else %}<span
+                                        class="badge bg-danger">Baixo</span>{% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="/admin/estoque" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i>
+                                    Ajustar</a>
+                            </td>
                         </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-success"><i
+                                    class="fas fa-check-circle me-2"></i> Tudo certo! Nenhum item com estoque baixo.
+                            </td>
+                        </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
@@ -42,48 +70,20 @@
 
 {% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', loadData);
+    async function sendEmail() {
+        if (!confirm('Deseja enviar este relatório por e-mail?')) return;
 
-    async function loadData() {
+        const btn = event.target.closest('button');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
         try {
-            const response = await fetch('/api/admin/estoque/baixo');
-            const data = await response.json();
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '';
-
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-success"><i class="fas fa-check-circle me-2"></i> Tudo certo! Nenhum item com estoque baixo.</td></tr>';
-                return;
-            }
-
-            data.forEach(item => {
-                const row = document.createElement('tr');
-
-                // Define status visual
-                let statusBadge = '';
-                if (item.estoque_atual <= 0) {
-                    statusBadge = '<span class="badge bg-dark">Zerado</span>';
-                    row.classList.add('table-danger'); // Destaca linha inteira se zerado
-                } else {
-                    statusBadge = '<span class="badge bg-danger">Baixo</span>';
-                }
-
-                row.innerHTML = `
-                    <td class="fw-bold">${item.nome}</td>
-                    <td><span class="badge bg-secondary">${item.tipo}</span></td>
-                    <td class="text-center fs-5 fw-bold">${item.estoque_atual} <small class="fs-6 fw-normal text-muted">${item.unidade}</small></td>
-                    <td class="text-center">${item.estoque_minimo} <small class="text-muted">${item.unidade}</small></td>
-                    <td class="text-center">${statusBadge}</td>
-                    <td class="text-end">
-                        <a href="/admin/estoque" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i> Ajustar</a>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        } catch (error) {
-            console.error('Erro:', error);
-            document.getElementById('table-body').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Erro ao carregar dados.</td></tr>';
-        }
+            const res = await fetch('/admin/estoque/baixo/email', { method: 'POST' });
+            const data = await res.json();
+            alert(data.message);
+        } catch (e) { alert('Erro de conexão.'); }
+        finally { btn.disabled = false; btn.innerHTML = originalHtml; }
     }
 </script>
 {% endblock %}

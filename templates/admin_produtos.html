@@ -1,0 +1,291 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Produtos e Receitas — Admin Colonial{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container admin-container" id="products-app">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>🍕 Produtos e Receitas (Cardápio)</h1>
+
+        <div>
+            <a href="/admin/dashboard" class="btn btn-outline-dark">
+                <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Ficha Técnica (Receita) - Agora em destaque -->
+        <div class="col-12 mb-4">
+            <div class="card bg-dark text-light border-warning h-100">
+                <div class="card-header border-warning">
+                    <h5 class="mb-0 text-warning"><i class="fas fa-clipboard-list"></i> Ficha Técnica (Receita)</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Selecione um produto do cardápio para definir sua composição
+                        (ingredientes).</p>
+                    <div class="mb-3">
+                        <label class="form-label">Selecione o Produto:</label>
+                        <select class="form-select bg-dark text-light border-secondary" v-model="selectedProduct"
+                            @change="loadRecipe">
+                            <option value="">-- Selecione um Produto --</option>
+                            <optgroup v-for="(items, category) in cardapio" :label="category">
+                                <option v-for="item in items" :value="item.id">[[ item.nome ]]</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <div v-if="selectedProduct">
+                        <!-- Tabela de Receita -->
+                        <div class="table-responsive mb-3">
+                            <table class="table table-dark table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Ingrediente</th>
+                                        <th class="text-end" style="width: 100px;">Qtd</th>
+                                        <th class="text-end" style="width: 100px;">Custo Estimado</th>
+                                        <th style="width: 50px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="r in recipe">
+                                        <td>[[ r.nome_ingrediente ]] (Em [[ r.unidade ]])</td>
+                                        <td class="text-end">[[ r.quantidade ]]</td>
+                                        <td class="text-end" :class="{'text-muted': r.custo_parcial == 0}">
+                                            R$ [[ (r.custo_parcial || 0).toFixed(2) ]]
+                                        </td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-danger border-0"
+                                                @click="removeRecipeItem(r.id)">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="recipe.length === 0">
+                                        <td colspan="4" class="text-center text-muted small py-3">Nenhum ingrediente na
+                                            receita deste produto.</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="2" class="text-end fw-bold">Custo Total da Receita:</td>
+                                        <td class="text-end fw-bold text-warning">[[ formatCurrency(recipeTotalCost) ]]
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top border-secondary">
+                            <h6><i class="fas fa-plus-circle text-warning"></i> Adicionar Ingrediente à Receita</h6>
+                            <div class="alert alert-info small py-2 mb-2" v-if="successMessage">
+                                [[ successMessage ]]
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <select class="form-select form-select-sm bg-dark text-light border-secondary"
+                                        v-model="newRecipeItem.ingrediente_id">
+                                        <option value="">Selecione o Ingrediente...</option>
+                                        <option v-for="ing in ingredientes" :value="ing.id">[[ ing.nome ]] ([[
+                                            ing.unidade ]])</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <input type="number" step="0.001"
+                                        class="form-control form-control-sm bg-dark text-light border-secondary"
+                                        placeholder="Qtd (ex: 0.3)" v-model="newRecipeItem.quantidade">
+                                </div>
+                                <div class="col-3">
+                                    <button class="btn btn-sm btn-warning w-100 fw-bold" @click="addToRecipe"
+                                        :disabled="!newRecipeItem.ingrediente_id || !newRecipeItem.quantidade || saving">
+                                        <span v-if="saving"><i class="fas fa-spinner fa-spin"></i></span>
+                                        <span v-else>Vincular</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="text-center text-muted py-5">
+                        <i class="fas fa-utensils fa-3x mb-3 text-secondary"></i><br>
+                        Selecione um produto acima para visualizar e editar sua composição.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Vue.js 3 -->
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        delimiters: ['[[', ']]'],
+        data() {
+            return {
+                cardapio: {},
+                ingredientes: [], // Precisa carregar ingredientes para o dropdown de adição
+                selectedProduct: '',
+                recipe: [],
+                newRecipeItem: { ingrediente_id: '', quantidade: '' },
+                saving: false,
+                successMessage: '',
+                ingredientesError: null,
+                cardapioError: null
+            }
+        },
+        computed: {
+            recipeTotalCost() {
+                return this.recipe.reduce((acc, item) => acc + (item.custo_parcial || 0), 0);
+            }
+        },
+        mounted() {
+            this.loadCardapio();
+            this.loadIngredientes();
+        },
+        methods: {
+            formatCurrency(val) {
+                return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+            },
+            loadCardapio() {
+                fetch('/admin/api/cardapio')
+                    .then(async r => {
+                        if (!r.ok) {
+                            const err = await r.json().catch(() => ({}));
+                            throw new Error(err.error || "Erro na requisição: " + r.status);
+                        }
+                        return r.json();
+                    })
+                    .then(data => {
+                        this.cardapio = data;
+                    })
+                    .catch(e => {
+                        console.error("Erro ao carregar cardápio:", e);
+                        this.cardapioError = e.message;
+                        alert("Erro ao carregar produtos: " + e.message);
+                    });
+            },
+            loadIngredientes() {
+                fetch('/admin/api/ingredientes')
+                    .then(async r => {
+                        if (!r.ok) {
+                            const err = await r.json().catch(() => ({}));
+                            throw new Error(err.error || "Erro na requisição: " + r.status);
+                        }
+                        return r.json();
+                    })
+                    .then(data => {
+                        if (Array.isArray(data)) {
+                            this.ingredientes = data;
+                        } else {
+                            this.ingredientes = [];
+                        }
+                    })
+                    .catch(e => {
+                        console.error("Erro ao carregar ingredientes:", e);
+                        this.ingredientesError = e.message;
+                        alert("Erro ao carregar lista de ingredientes para seleção: " + e.message);
+                    });
+            },
+            loadRecipe() {
+                if (!this.selectedProduct) {
+                    this.recipe = [];
+                    return;
+                }
+                fetch(`/admin/api/receita/${this.selectedProduct}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        this.recipe = Array.isArray(data) ? data : (data.items || []);
+                    });
+            },
+            addToRecipe() {
+                this.saving = true;
+                this.successMessage = '';
+
+                const payload = {
+                    produto_id: this.selectedProduct,
+                    ingrediente_id: this.newRecipeItem.ingrediente_id,
+                    quantidade: this.newRecipeItem.quantidade,
+                    action: 'add'
+                };
+
+                fetch('/admin/api/receita', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                    .then(r => r.json())
+                    .then(res => {
+                        this.saving = false;
+                        if (res.success) {
+                            this.loadRecipe();
+                            this.successMessage = 'Ingrediente adicionado com sucesso!';
+                            setTimeout(() => this.successMessage = '', 3000);
+                            this.newRecipeItem.quantidade = '';
+                            // Mantém ingrediente selecionado para facilitar digitação rápida (opcional)
+                            // this.newRecipeItem.ingrediente_id = ''; 
+                        } else {
+                            alert("Erro: " + res.message);
+                        }
+                    })
+                    .catch(e => {
+                        this.saving = false;
+                        alert("Erro de comunicação: " + e);
+                    });
+            },
+            removeRecipeItem(itemId) {
+                if (!confirm("Remover este ingrediente da receita?")) return;
+
+                // Nota: A API espera {produto_id, ingrediente_id, action='remove'} OU 
+                // pode ter um endpoint específico. Vou assumir o padrão POST para /api/receita com action remove e id do item se possível
+                // Mas verifiquei admin.py: O endpoint espera 'produto_id' e 'ingrediente_id'.
+                // Se o frontend tem o ID da relação, talvez precise ajustar.
+                // Olhando o admin_estoque.html anterior:
+                /*
+                 const payload = { 
+                     produto_id: this.selectedProduct, 
+                     ingrediente_id: r.ingrediente_id, // Ops, o r é o item da lista
+                     action: 'remove' 
+                 };
+                */
+                // Preciso pegar o ingrediente_id do item da lista recipe
+                const item = this.recipe.find(r => r.id === itemId); // itemId aqui é o ID do Ingrediente ou da relação?
+                // No admin.py: api_receita retorna items com "id" (id da FichaTecnica? Não, o endpoint retorna id, nome_ingrediente, etc).
+                // Vamos checar o admin.py para ter certeza.
+                // Assumindo que o "id" no recipe array é o id da FichaTecnica, mas o POST espera ingrediente_id.
+
+                // CORREÇÃO RÁPIDA: Vou usar o ingrediente_id que deve vir no JSON.
+                // Se não vier, tenho um problema.
+                // No admin.py atual (linha 377 aprox): 
+
+                // ENTÃO TEM "ingrediente_id".
+
+                if (!item) return;
+
+                fetch('/admin/api/receita', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        produto_id: this.selectedProduct,
+                        ingrediente_id: item.ingrediente_id,
+                        action: 'remove'
+                    })
+                })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success) this.loadRecipe();
+                        else alert("Erro: " + res.message);
+                    });
+            }
+        }
+    }).mount('#products-app');
+</script>
+{% endblock %}

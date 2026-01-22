@@ -26,7 +26,7 @@
                 <a href="/admin/cardapio/restore" class="btn btn-outline-secondary btn-sm"
                     onclick="return confirm('Restaurar backup?')">↺ Restaurar</a>
 
-                <button class="btn btn-outline-secondary btn-sm" onclick="openConfigDisplay()">⚙️ Exibição</button>
+                <button class="btn btn-outline-secondary btn-sm" @click="openConfigModal">⚙️ Exibição</button>
                 <a href="/api/cardapio/pdf" target="_blank" class="btn btn-outline-secondary btn-sm">📄 PDF</a>
                 <button class="btn btn-success btn-sm" @click="shareWhatsApp">📲 Enviar Zap</button>
                 <button class="btn btn-outline-secondary btn-sm" @click="showPreview = true">👁️ Preview</button>
@@ -48,7 +48,15 @@
                     </div>
                     <h3 v-else class="text-primary m-0 cursor-edit" @click="startEditCategory(category)"
                         title="Clique para editar o nome">
-                        {{ category }} <small class="text-muted fs-6">✏️</small></h3>
+                        {{ category }}
+                        <small class="text-muted fs-6">✏️</small>
+                    </h3>
+                    <button class="btn btn-outline-secondary btn-sm ms-2" @click="triggerCategoryFile(category)"
+                        title="Alterar Foto da Categoria">
+                        📷
+                    </button>
+                    <input type="file" :id="'cat-file-' + category" class="d-none" accept="image/*"
+                        @change="uploadCategoryPhoto($event, category)">
                 </div>
                 <button class="btn btn-outline-danger btn-sm" @click="removeCategory(category)">Excluir
                     Categoria</button>
@@ -238,7 +246,7 @@
             },
             async fetchConfig() {
                 try {
-                    const res = await fetch('/api/admin/config/cardapio');
+                    const res = await fetch('/admin/api/config/cardapio');
                     this.config = await res.json();
                 } catch (e) { console.error('Erro ao carregar configurações'); }
             },
@@ -400,7 +408,7 @@
             },
             async saveConfig() {
                 try {
-                    await fetch('/api/admin/config/cardapio', {
+                    await fetch('/admin/api/config/cardapio', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(this.tempConfig)
@@ -415,6 +423,46 @@
             },
             isPriceVisible(cat) {
                 return this.config[cat]?.show_price !== false;
+            },
+            triggerCategoryFile(category) {
+                document.getElementById('cat-file-' + category).click();
+            },
+            async uploadCategoryPhoto(event, category) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    // 1. Upload da imagem
+                    const res = await fetch('/api/admin/upload/image', { method: 'POST', body: formData });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        const newUrl = data.url;
+                        // 2. Atualiza a categoria via API
+                        const updateRes = await fetch('/api/admin/categoria/update', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                original_name: category,
+                                foto_url: newUrl
+                            })
+                        });
+                        const updateData = await updateRes.json();
+                        if (updateData.success) {
+                            alert('Foto da categoria atualizada!');
+                        } else {
+                            alert('Erro ao atualizar categoria: ' + updateData.message);
+                        }
+                    } else {
+                        alert('Erro no upload da imagem');
+                    }
+                } catch (e) {
+                    alert('Erro de conexão');
+                    console.error(e);
+                }
             }
         }
     }).mount('#app');

@@ -64,7 +64,7 @@
 
     async function loadBanners() {
         try {
-            const res = await fetch('/api/admin/banners');
+            const res = await fetch('/admin/api/banners');
             const banners = await res.json();
             const list = document.getElementById('bannersList');
 
@@ -121,7 +121,7 @@
         formData.append('file', file);
 
         try {
-            const res = await fetch('/api/admin/banners', {
+            const res = await fetch('/admin/api/banners', {
                 method: 'POST',
                 body: formData
             });
@@ -141,7 +141,7 @@
     async function deleteBanner(id) {
         if (!confirm('Tem certeza?')) return;
         try {
-            await fetch('/api/admin/banners/' + id, { method: 'DELETE' });
+            await fetch('/admin/api/banners/' + id, { method: 'DELETE' });
             loadBanners();
         } catch (e) { alert('Erro ao remover.'); }
     }

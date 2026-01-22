@@ -123,6 +123,8 @@ def api_cardapio():
             except: pass
 
         for cat in categorias_db:
+            if not cat.visivel: continue
+            
             produtos_db = Produto.query.filter_by(categoria_id=cat.id).all()
             items_list = []
 

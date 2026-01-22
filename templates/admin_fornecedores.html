@@ -1,0 +1,174 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Fornecedores — Admin Colonial{% endblock %}
+
+{% block content %}
+<div class="container admin-container" id="fornecedores-app">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>🏭 Gestão de Fornecedores</h1>
+        <button class="btn btn-warning" @click="openModal('new')">
+            <i class="fas fa-plus"></i> Novo Fornecedor
+        </button>
+    </div>
+
+    <!-- Lista -->
+    <div class="card bg-dark text-light border-warning">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Empresa</th>
+                            <th>CNPJ</th>
+                            <th>Contato</th>
+                            <th>Telefone</th>
+                            <th>Email</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="f in fornecedores" :key="f.id">
+                            <td><strong>[[ f.nome_empresa ]]</strong></td>
+                            <td>[[ f.cnpj || '-' ]]</td>
+                            <td>[[ f.contato_nome || '-' ]]</td>
+                            <td>[[ f.telefone || '-' ]]</td>
+                            <td>[[ f.email || '-' ]]</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-info me-1" @click="editFornecedor(f)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @click="deleteFornecedor(f)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr v-if="fornecedores.length === 0">
+                            <td colspan="6" class="text-center text-muted py-4">Nenhum fornecedor cadastrado.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form -->
+    <div class="modal fade" id="fornecedorModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-light border-warning">
+                <div class="modal-header border-warning">
+                    <h5 class="modal-title">[[ modalTitle ]]</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Nome da Empresa (Razão Social)</label>
+                        <input type="text" class="form-control bg-dark text-light border-secondary"
+                            v-model="tempF.nome_empresa">
+                    </div>
+                    <div class="mb-3">
+                        <label>CNPJ</label>
+                        <input type="text" class="form-control bg-dark text-light border-secondary"
+                            v-model="tempF.cnpj">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Nome Contato</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary"
+                                v-model="tempF.contato_nome">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Telefone</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary"
+                                v-model="tempF.telefone">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <input type="email" class="form-control bg-dark text-light border-secondary"
+                            v-model="tempF.email">
+                    </div>
+                </div>
+                <div class="modal-footer border-warning">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning" @click="saveFornecedor">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        delimiters: ['[[', ']]'],
+        data() {
+            return {
+                fornecedores: [],
+                tempF: { id: null, nome_empresa: '', cnpj: '', contato_nome: '', telefone: '', email: '' },
+                modalTitle: 'Novo Fornecedor',
+                modalInstance: null
+            }
+        },
+        mounted() {
+            this.loadFornecedores();
+            const modalEl = document.getElementById('fornecedorModal');
+            if (modalEl) this.modalInstance = new bootstrap.Modal(modalEl);
+        },
+        methods: {
+            loadFornecedores() {
+                fetch('/admin/api/fornecedores')
+                    .then(r => r.json())
+                    .then(data => this.fornecedores = data);
+            },
+            openModal(type) {
+                if (type === 'new') {
+                    this.modalTitle = 'Novo Fornecedor';
+                    this.tempF = { id: null, nome_empresa: '', cnpj: '', contato_nome: '', telefone: '', email: '' };
+                }
+                if (this.modalInstance) this.modalInstance.show();
+            },
+            editFornecedor(f) {
+                this.modalTitle = 'Editar Fornecedor';
+                this.tempF = { ...f };
+                if (this.modalInstance) this.modalInstance.show();
+            },
+            saveFornecedor() {
+                if (!this.tempF.nome_empresa) return alert("Nome da empresa é obrigatório");
+
+                fetch('/admin/api/fornecedores', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.tempF)
+                })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success) {
+                            this.loadFornecedores();
+                            if (this.modalInstance) this.modalInstance.hide();
+                        } else {
+                            alert("Erro: " + res.message);
+                        }
+                    });
+            },
+            deleteFornecedor(f) {
+                if (!confirm(`Excluir ${f.nome_empresa}?`)) return;
+                fetch('/admin/api/fornecedores', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: f.id })
+                })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success) this.loadFornecedores();
+                        else alert("Erro: " + res.message);
+                    });
+            }
+        }
+    }).mount('#fornecedores-app');
+</script>
+{% endblock %}

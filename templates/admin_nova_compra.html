@@ -1,0 +1,257 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Nova Compra — Admin Colonial{% endblock %}
+
+{% block content %}
+<div class="container admin-container" id="nova-compra-app">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-cart-plus text-warning"></i> Nova Entrada de Nota</h1>
+        <a href="/admin/compras" class="btn btn-outline-light">Cancelar e Voltar</a>
+    </div>
+
+    <div class="row">
+        <!-- Cabeçalho da Nota -->
+        <div class="col-md-12 mb-4">
+            <div class="card bg-dark text-light border-secondary">
+                <div class="card-header border-secondary">Dados da Nota</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label>Data de Emissão</label>
+                            <input type="date" class="form-control bg-dark text-light border-secondary"
+                                v-model="form.data">
+                        </div>
+                        <div class="col-md-4">
+                            <label>Fornecedor</label>
+                            <select class="form-select bg-dark text-light border-secondary"
+                                v-model="form.fornecedor_id">
+                                <option value="">-- Selecione --</option>
+                                <option v-for="f in fornecedores" :value="f.id">[[ f.nome_empresa ]]</option>
+                            </select>
+                            <small class="text-muted"><a href="/admin/fornecedores" target="_blank"
+                                    class="text-decoration-none text-warning">Cadastrar Novo</a></small>
+                        </div>
+                        <div class="col-md-3">
+                            <label>Nº Nota Fiscal</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary"
+                                v-model="form.nota_fiscal">
+                        </div>
+                        <div class="col-md-12">
+                            <label>Observação</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary"
+                                v-model="form.observacao" placeholder="Ex: Entrega parcial...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Adicionar Itens -->
+        <div class="col-md-8">
+            <div class="card bg-dark text-light border-warning mb-4">
+                <div class="card-header border-warning text-warning fw-bold">Adicionar Itens</div>
+                <div class="card-body">
+                    <div class="row g-2 align-items-end mb-3">
+                        <div class="col-md-5">
+                            <label>Ingrediente</label>
+                            <!-- Simples Select por enquanto, ideal seria um Searchable Select -->
+                            <select class="form-select bg-dark text-light border-secondary"
+                                v-model="newItem.ingrediente_id" @change="onIngredienteChange">
+                                <option value="">-- Escolha o Ingrediente --</option>
+                                <option v-for="i in ingredientes" :value="i.id">[[ i.nome ]] ([[ i.unidade ]])</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Qtd</label>
+                            <input type="number" step="0.001" class="form-control bg-dark text-light border-secondary"
+                                v-model="newItem.quantidade" placeholder="0.00">
+                        </div>
+                        <div class="col-md-3">
+                            <label>Custo Unit. (R$)</label>
+                            <input type="number" step="0.01" class="form-control bg-dark text-light border-secondary"
+                                v-model="newItem.preco_unitario" placeholder="0.00">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-warning w-100" @click="addItem" :disabled="!isValidItem">
+                                <i class="fas fa-plus"></i> Adicionar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Itens Adicionados -->
+            <div class="card bg-dark text-light border-secondary">
+                <div class="card-header border-secondary">Itens na Nota</div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="text-secondary small">
+                                <th>Item</th>
+                                <th class="text-end">Qtd</th>
+                                <th class="text-end">Unitário</th>
+                                <th class="text-end">Subtotal</th>
+                                <th class="text-end" style="width: 50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(item, idx) in form.itens" :key="idx">
+                                <td>[[ getIngredienteName(item.ingrediente_id) ]]</td>
+                                <td class="text-end">[[ item.quantidade ]]</td>
+                                <td class="text-end">[[ formatCurrency(item.preco_unitario) ]]</td>
+                                <td class="text-end">[[ formatCurrency(item.subtotal) ]]</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-danger border-0" @click="removeItem(idx)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr v-if="form.itens.length === 0">
+                                <td colspan="5" class="text-center text-muted py-3">Nenhum item adicionado.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumo e Ação -->
+        <div class="col-md-4">
+            <div class="card bg-dark text-light border-success h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title text-success">Resumo da Entrada</h5>
+                        <hr class="border-secondary">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Itens:</span>
+                            <strong>[[ form.itens.length ]]</strong>
+                        </div>
+                        <div class="d-flex justify-content-between fs-4 fw-bold text-success">
+                            <span>Total:</span>
+                            <span>[[ formatCurrency(grandTotal) ]]</span>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="alert alert-info small">
+                            <i class="fas fa-info-circle"></i> Ao finalizar, o estoque destes itens será incrementado e
+                            o custo unitário será atualizado.
+                        </div>
+                        <button class="btn btn-success w-100 btn-lg" @click="finalizePurchase"
+                            :disabled="form.itens.length === 0 || processing">
+                            <span v-if="processing"><i class="fas fa-spinner fa-spin"></i> Processando...</span>
+                            <span v-else><i class="fas fa-check"></i> Finalizar Entrada</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        delimiters: ['[[', ']]'],
+        data() {
+            return {
+                ingredientes: [],
+                fornecedores: [],
+                form: {
+                    data: new Date().toISOString().split('T')[0],
+                    fornecedor_id: '',
+                    nota_fiscal: '',
+                    observacao: '',
+                    itens: []
+                },
+                newItem: {
+                    ingrediente_id: '',
+                    quantidade: '',
+                    preco_unitario: ''
+                },
+                processing: false
+            }
+        },
+        computed: {
+            isValidItem() {
+                return this.newItem.ingrediente_id &&
+                    this.newItem.quantidade > 0 &&
+                    this.newItem.preco_unitario >= 0;
+            },
+            grandTotal() {
+                return this.form.itens.reduce((acc, item) => acc + item.subtotal, 0);
+            }
+        },
+        mounted() {
+            this.loadData();
+        },
+        methods: {
+            formatCurrency(val) {
+                return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+            },
+            loadData() {
+                fetch('/admin/api/ingredientes').then(r => r.json()).then(d => this.ingredientes = d);
+                fetch('/admin/api/fornecedores').then(r => r.json()).then(d => this.fornecedores = d);
+            },
+            getIngredienteName(id) {
+                const ing = this.ingredientes.find(i => i.id == id);
+                return ing ? `${ing.nome} (${ing.unidade})` : 'Desconhecido';
+            },
+            onIngredienteChange() {
+                // Opcional: Auto-preencher custo atual se quiser
+                // const ing = this.ingredientes.find(i => i.id == this.newItem.ingrediente_id);
+                // if (ing) this.newItem.preco_unitario = ing.custo;
+            },
+            addItem() {
+                const qtd = parseFloat(this.newItem.quantidade);
+                const preco = parseFloat(this.newItem.preco_unitario);
+
+                this.form.itens.push({
+                    ingrediente_id: this.newItem.ingrediente_id,
+                    quantidade: qtd,
+                    preco_unitario: preco,
+                    subtotal: qtd * preco
+                });
+
+                // Reset form item
+                this.newItem.ingrediente_id = '';
+                this.newItem.quantidade = '';
+                this.newItem.preco_unitario = '';
+            },
+            removeItem(idx) {
+                this.form.itens.splice(idx, 1);
+            },
+            finalizePurchase() {
+                if (!confirm("Confirma a entrada desta nota e atualização do estoque?")) return;
+
+                this.processing = true;
+                const payload = { ...this.form, total: this.grandTotal };
+
+                fetch('/admin/api/compras', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                    .then(r => r.json())
+                    .then(res => {
+                        this.processing = false;
+                        if (res.success) {
+                            alert("Entrada realizada com sucesso!");
+                            window.location.href = '/admin/compras';
+                        } else {
+                            alert("Erro: " + res.message);
+                        }
+                    })
+                    .catch(e => {
+                        this.processing = false;
+                        alert("Erro de conexão");
+                    });
+            }
+        }
+    }).mount('#nova-compra-app');
+</script>
+{% endblock %}

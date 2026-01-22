@@ -25,6 +25,8 @@ class Ingrediente(db.Model):
     estoque_atual = db.Column(db.Float, default=0.0)
     estoque_minimo = db.Column(db.Float, default=1.0) # Ponto de pedido
     custo_unitario = db.Column(db.Float, default=0.0) # Para cálculo de CMV
+    fornecedor = db.Column(db.String(100))
+    validade = db.Column(db.Date) # Data de validade do lote atual
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # --- CARDÁPIO E PRODUTOS ---
@@ -35,6 +37,7 @@ class Categoria(db.Model):
     ordem = db.Column(db.Integer, default=0)
     visivel = db.Column(db.Boolean, default=True)
     exibir_preco = db.Column(db.Boolean, default=True)
+    foto_url = db.Column(db.String(255))
     produtos = db.relationship('Produto', backref='categoria', lazy=True)
 
 class Produto(db.Model):
@@ -47,6 +50,8 @@ class Produto(db.Model):
     foto_url = db.Column(db.String(255))
     visivel = db.Column(db.Boolean, default=True)
     esgotado = db.Column(db.Boolean, default=False)
+    tipo = db.Column(db.String(20), default='fabricado') # fabricado, revenda
+    ingrediente_id = db.Column(db.Integer, db.ForeignKey('ingredientes.id'), nullable=True) # Para revenda direta
     
     # Relacionamento com Ingredientes (Ficha Técnica)
     receita = db.relationship('FichaTecnica', backref='produto', lazy=True)
@@ -135,5 +140,44 @@ class Banner(db.Model):
     titulo = db.Column(db.String(100))
     descricao = db.Column(db.String(200))
     imagem_url = db.Column(db.String(255), nullable=False)
+    link_url = db.Column(db.String(255))
+    link_text = db.Column(db.String(50))
     ordem = db.Column(db.Integer, default=0)
     ativo = db.Column(db.Boolean, default=True)
+
+# --- GESTÃO DE COMPRAS E FORNECEDORES ---
+class Fornecedor(db.Model):
+    __tablename__ = 'fornecedores'
+    id = db.Column(db.Integer, primary_key=True)
+    nome_empresa = db.Column(db.String(100), nullable=False)
+    cnpj = db.Column(db.String(20))
+    contato_nome = db.Column(db.String(100))
+    telefone = db.Column(db.String(20))
+    email = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+class Compra(db.Model):
+    __tablename__ = 'compras'
+    id = db.Column(db.Integer, primary_key=True)
+    fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedores.id'))
+    data_compra = db.Column(db.DateTime, default=datetime.utcnow)
+    nota_fiscal = db.Column(db.String(50))
+    total = db.Column(db.Float, default=0.0)
+    observacao = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relacionamentos
+    fornecedor = db.relationship('Fornecedor', backref='compras')
+    itens = db.relationship('ItemCompra', backref='compra', lazy=True)
+
+class ItemCompra(db.Model):
+    __tablename__ = 'itens_compra'
+    id = db.Column(db.Integer, primary_key=True)
+    compra_id = db.Column(db.Integer, db.ForeignKey('compras.id'), nullable=False)
+    ingrediente_id = db.Column(db.Integer, db.ForeignKey('ingredientes.id'), nullable=False)
+    quantidade = db.Column(db.Float, nullable=False)
+    preco_unitario = db.Column(db.Float, nullable=False)
+    subtotal = db.Column(db.Float, nullable=False)
+    
+    # Relacionamentos
+    ingrediente = db.relationship('Ingrediente')

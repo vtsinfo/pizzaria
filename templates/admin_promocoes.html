@@ -109,11 +109,18 @@
         },
         methods: {
             async fetchData() {
-                const resPromos = await fetch('/api/admin/promocoes');
+                const resPromos = await fetch('/admin/api/promocoes');
                 this.promos = await resPromos.json();
 
-                const resCats = await fetch('/api/admin/categorias');
-                this.categories = await resCats.json();
+                const resCats = await fetch('/admin/api/config/cardapio'); // Using existing config endpoint which returns cats dict
+                // But wait, config return dict {name: {cfg}}, proms needs LIST of names.
+                // admin_cardapio uses /api/cardapio (public) which returns dict {cat: items}.
+                // admin.py has NO LIST categories endpoint seen yet except inside /api/config/cardapio
+
+                // Let's create specific endpoint for list of categories names later.
+                // For now, let's use /admin/api/config/cardapio and extract keys.
+                const config = await resCats.json();
+                this.categories = Object.keys(config);
             },
             formatDays(days) {
                 return days.map(d => this.daysOfWeek[d]).join(', ');
@@ -134,7 +141,7 @@
                 }
             },
             async savePromos() {
-                await fetch('/api/admin/promocoes', {
+                await fetch('/admin/api/promocoes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(this.promos)

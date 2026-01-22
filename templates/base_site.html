@@ -196,15 +196,21 @@
                 <div class="col-md-4 mb-4">
                     <h5>Horário de Funcionamento</h5>
                     <ul class="list-unstyled">
+                        {% if site_config.horario_funcionamento %}
+                        {% for line in site_config.horario_funcionamento.split('\n') %}
+                        <li>{{ line }}</li>
+                        {% endfor %}
+                        {% else %}
                         <li>Seg - Qui: 18h às 23h30</li>
                         <li>Sex - Sáb: 18h às 00h00</li>
                         <li>Dom: 18h às 23h30</li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>
             <hr class="border-secondary">
             <div class="d-flex justify-content-between align-items-center flex-wrap">
-                <small>&copy; {{ 2024 }} {{ site_config.nome_fantasia }}. Todos os direitos reservados.</small>
+                <small>&copy; {{ now.year }} {{ site_config.nome_fantasia }}. Todos os direitos reservados.</small>
                 <div>
                     {% if site_config.instagram %}
                     <a href="{{ site_config.instagram }}" target="_blank" class="me-3"><i

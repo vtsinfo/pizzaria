@@ -3,7 +3,8 @@
 {% block head %}
 <style>
     .hero-pizza {
-        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1920&q=80');
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+        url('{{ site_config.imagem_hero_home or "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1920&q=80" }}');
         background-size: cover;
         background-position: center;
         padding: 180px 0 120px;
@@ -99,59 +100,21 @@
 
 <div class="container py-5">
     <div class="row text-center g-4 reveal">
+        {% for cat in categorias %}
         <div class="col-md-6 col-lg-3">
             <a href="{{ url_for('public.cardapio') }}" class="text-decoration-none">
                 <div class="card-gourmet h-100">
-                    <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80"
-                        class="card-img-top" alt="Pizzas">
+                    <img src="{{ cat.foto_url or 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80' }}"
+                        class="card-img-top" alt="{{ cat.nome }}" style="object-fit: cover; height: 220px;">
                     <div class="p-4">
-                        <h3 class="text-warning mb-3 h4" style="font-family: 'Playfair Display', serif;">🍕 Pizzas</h3>
-                        <p class="text-secondary small">Mais de 50 sabores, massas de longa fermentação, doces e
-                            salgadas.</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-6 col-lg-3">
-            <a href="{{ url_for('public.cardapio') }}" class="text-decoration-none">
-                <div class="card-gourmet h-100">
-                    <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80"
-                        class="card-img-top" alt="Hamburgueres">
-                    <div class="p-4">
-                        <h3 class="text-warning mb-3 h4" style="font-family: 'Playfair Display', serif;">🍔 Hamburgueres
+                        <h3 class="text-warning mb-3 h4" style="font-family: 'Playfair Display', serif;">{{ cat.nome }}
                         </h3>
-                        <p class="text-secondary small">Artesanais, carne Angus selecionada e pães especiais.</p>
+                        <p class="text-secondary small">Confira nossas opções de {{ cat.nome }}.</p>
                     </div>
                 </div>
             </a>
         </div>
-        <div class="col-md-6 col-lg-3">
-            <a href="{{ url_for('public.cardapio') }}" class="text-decoration-none">
-                <div class="card-gourmet h-100">
-                    <img src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80"
-                        class="card-img-top" alt="Churrasco">
-                    <div class="p-4">
-                        <h3 class="text-warning mb-3 h4" style="font-family: 'Playfair Display', serif;">🍖 Churrasco
-                        </h3>
-                        <p class="text-secondary small">Espetinhos premium e porções na brasa para acompanhar seu happy
-                            hour.</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-6 col-lg-3">
-            <a href="{{ url_for('public.cardapio') }}" class="text-decoration-none">
-                <div class="card-gourmet h-100">
-                    <img src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=800&q=80"
-                        class="card-img-top" alt="Drinks">
-                    <div class="p-4">
-                        <h3 class="text-warning mb-3 h4" style="font-family: 'Playfair Display', serif;">🍹 Drinks</h3>
-                        <p class="text-secondary small">Caipirinhas de frutas frescas, sucos naturais e cervejas
-                            trincando.</p>
-                    </div>
-                </div>
-            </a>
-        </div>
+        {% endfor %}
         {% if site_config.self_service_enabled %}
         <div class="col-md-6 col-lg-3">
             <div class="card-gourmet h-100">
@@ -289,55 +252,29 @@
             <p class="text-secondary">Encontre a Colonial mais próxima de você.</p>
         </div>
         <div class="row g-4">
-            <!-- Colonial 1 -->
+            <!-- Unidades Dinâmicas -->
+            {% if site_config.units %}
+            {% for unit in site_config.units %}
             <div class="col-md-6 col-lg-3">
                 <div class="card h-100 bg-dark border-secondary text-light">
                     <div class="card-body">
-                        <h5 class="card-title text-warning mb-3">Colonial 1 (Itaquera)</h5>
-                        <p class="card-text small text-secondary mb-2"><i class="fas fa-map-marker-alt me-2"></i>Rua
-                            Virgínia
-                            Ferni, 1758, Conj. Res. José Bonifácio</p>
-                        <p class="card-text small text-secondary"><i class="fas fa-phone me-2"></i>(11)
-                            2074‑1100<br><i class="fab fa-whatsapp me-2"></i>(11) 91456‑9028</p>
+                        <h5 class="card-title text-warning mb-3">{{ unit.name }}</h5>
+                        <p class="card-text small text-secondary mb-2"><i class="fas fa-map-marker-alt me-2"></i>{{
+                            unit.address }}</p>
+                        <p class="card-text small text-secondary"><i class="fas fa-phone me-2"></i>{{ unit.phone }}</p>
+                        {% if unit.whatsapp %}
+                        <p class="card-text small text-secondary"><i class="fab fa-whatsapp me-2"></i>{{ unit.whatsapp
+                            }}</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
-            <!-- Colonial 2 -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100 bg-dark border-secondary text-light">
-                    <div class="card-body">
-                        <h5 class="card-title text-warning mb-3">Colonial 2 (Centenário)</h5>
-                        <p class="card-text small text-secondary mb-2"><i class="bi bi-geo-alt me-2"></i>Av. Luís Pires
-                            de Minas, 1387, Cidade IV Centenário</p>
-                        <p class="card-text small text-secondary"><i class="bi bi-telephone me-2"></i>(11)
-                            2721‑8512<br><i class="bi bi-whatsapp me-2"></i>(11) 97413‑6101</p>
-                    </div>
-                </div>
+            {% endfor %}
+            {% else %}
+            <div class="col-12 text-center text-muted">
+                <p>Nenhuma unidade cadastrada.</p>
             </div>
-            <!-- Colonial 3 -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100 bg-dark border-secondary text-light">
-                    <div class="card-body">
-                        <h5 class="card-title text-warning mb-3">Colonial 3 (Paineiras)</h5>
-                        <p class="card-text small text-secondary mb-2"><i class="bi bi-geo-alt me-2"></i>Av. Águia de
-                            Haia, 1210, Parque Paineiras</p>
-                        <p class="card-text small text-secondary"><i class="bi bi-telephone me-2"></i>(11)
-                            2721‑8512<br><i class="bi bi-whatsapp me-2"></i>(11) 97413‑6101</p>
-                    </div>
-                </div>
-            </div>
-            <!-- Colonial 4 -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100 bg-dark border-secondary text-light">
-                    <div class="card-body">
-                        <h5 class="card-title text-warning mb-3">Colonial 4 (Guarulhos)</h5>
-                        <p class="card-text small text-secondary mb-2"><i class="bi bi-geo-alt me-2"></i>Av. Torres
-                            Tibagy, 916, Guarulhos/SP</p>
-                        <p class="card-text small text-secondary"><i class="bi bi-telephone me-2"></i>(11)
-                            2086‑6260<br><i class="bi bi-whatsapp me-2"></i>(11) 93740‑6544</p>
-                    </div>
-                </div>
-            </div>
+            {% endif %}
         </div>
     </div>
 </section>
