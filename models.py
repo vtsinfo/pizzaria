@@ -15,6 +15,19 @@ class User(db.Model):
     permissions = db.Column(db.Text, default='[]') # JSON string
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class Unidade(db.Model):
+    __tablename__ = 'unidades'
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False) # Ex: Matriz, Filial Centro
+    endereco = db.Column(db.String(200), nullable=False)
+    telefone = db.Column(db.String(20))
+    whatsapp = db.Column(db.String(20))
+    email = db.Column(db.String(120)) # Novo campo
+    instagram = db.Column(db.String(100))
+    facebook = db.Column(db.String(100))
+    ativo = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 # --- TABELAS DE ESTOQUE E FICHA TÉCNICA (NOVO ERP) ---
 class Ingrediente(db.Model):
     __tablename__ = 'ingredientes'

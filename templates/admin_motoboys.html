@@ -16,7 +16,8 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">Telefone</label>
-                <input type="text" class="form-control" v-model="newMotoboy.phone" placeholder="(11) 99999-9999">
+                <input type="text" class="form-control mask-phone" v-model="newMotoboy.phone"
+                    placeholder="(11) 99999-9999">
             </div>
             <div class="col-md-3">
                 <label class="form-label">Placa (Opcional)</label>
@@ -66,6 +67,9 @@
         },
         mounted() {
             this.fetchMotoboys();
+        },
+        updated() {
+            if (window.applyMasks) window.applyMasks();
         },
         methods: {
             async fetchMotoboys() {

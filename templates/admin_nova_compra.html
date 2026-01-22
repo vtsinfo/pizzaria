@@ -96,7 +96,19 @@
                         </thead>
                         <tbody>
                             <tr v-for="(item, idx) in form.itens" :key="idx">
-                                <td>[[ getIngredienteName(item.ingrediente_id) ]]</td>
+                                <td>
+                                    <span v-if="item.ingrediente_id">[[ getIngredienteName(item.ingrediente_id)
+                                        ]]</span>
+                                    <div v-else class="text-warning">
+                                        <i class="fas fa-exclamation-circle"></i> "[[ item._temp_desc ]]"
+                                        <select
+                                            class="form-select form-select-sm bg-dark text-light border-warning mt-1"
+                                            v-model="item.ingrediente_id">
+                                            <option value="">-- Vincular Ingrediente --</option>
+                                            <option v-for="i in ingredientes" :value="i.id">[[ i.nome ]]</option>
+                                        </select>
+                                    </div>
+                                </td>
                                 <td class="text-end">[[ item.quantidade ]]</td>
                                 <td class="text-end">[[ formatCurrency(item.preco_unitario) ]]</td>
                                 <td class="text-end">[[ formatCurrency(item.subtotal) ]]</td>
@@ -194,8 +206,61 @@
                 return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
             },
             loadData() {
-                fetch('/admin/api/ingredientes').then(r => r.json()).then(d => this.ingredientes = d);
-                fetch('/admin/api/fornecedores').then(r => r.json()).then(d => this.fornecedores = d);
+                Promise.all([
+                    fetch('/admin/api/ingredientes').then(r => r.json()),
+                    fetch('/admin/api/fornecedores').then(r => r.json())
+                ]).then(([ingData, fornData]) => {
+                    this.ingredientes = ingData;
+                    this.fornecedores = fornData;
+
+                    // Check import
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('import') === 'true') {
+                        const importedData = localStorage.getItem('import_compra_data');
+                        if (importedData) {
+                            try {
+                                const data = JSON.parse(importedData);
+                                this.populateForm(data);
+                                // Optional: Clear storage to avoid reloading on refresh
+                                // localStorage.removeItem('import_compra_data');
+                            } catch (e) {
+                                console.error("Erro ao carregar dados importados", e);
+                            }
+                        }
+                    }
+                });
+            },
+            populateForm(data) {
+                if (data.data) this.form.data = data.data;
+                if (data.nota_fiscal) this.form.nota_fiscal = data.nota_fiscal;
+
+                // Tentativa de preencher fornecedor
+                if (data.fornecedor_id) {
+                    this.form.fornecedor_id = data.fornecedor_id;
+                }
+
+                if (data.observacao) this.form.observacao = data.observacao;
+
+                // Preencher Itens
+                if (data.itens && data.itens.length > 0) {
+                    data.itens.forEach(importItem => {
+                        // Tenta achar ingrediente pelo nome (fuzzy match simples ou exato)
+                        // Aqui assumimos que não achou ID, então usuário vai ter que selecionar manualmente
+                        // MAS, para facilitar, vamos adicionar como item mas sem ID, e criar um alerta visual
+                        // Como o seletor pede ID, talvez seja melhor não adicionar no grid mas avisar?
+                        // Melhor: Tentar achar por nome exato.
+
+                        const match = this.ingredientes.find(i => i.nome.toLowerCase() === importItem.descricao.toLowerCase());
+
+                        this.form.itens.push({
+                            ingrediente_id: match ? match.id : '', // Se não achar, fica vazio pra selecionar
+                            quantidade: importItem.quantidade,
+                            preco_unitario: importItem.preco_unitario,
+                            subtotal: importItem.subtotal,
+                            _temp_desc: importItem.descricao // Meta dado para exibir se não tiver ID
+                        });
+                    });
+                }
             },
             getIngredienteName(id) {
                 const ing = this.ingredientes.find(i => i.id == id);

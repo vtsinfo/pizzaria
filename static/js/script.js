@@ -65,6 +65,12 @@ function initAIWidget() {
     fetch('/api/config/geral')
         .then(r => r.json())
         .then(data => {
+            // Verifica se a IA deve estar ativa
+            if (data.ai_enabled === false) {
+                if (widget) widget.style.display = 'none';
+                return; // Interrompe a inicialização do widget
+            }
+
             if (data.tempo_espera) currentWaitTime = data.tempo_espera;
             if (data.units && Array.isArray(data.units)) units = data.units;
             // Store global config for voice access
@@ -73,8 +79,12 @@ function initAIWidget() {
             // Atualiza nome do assistente na interface (garante visualização mesmo sem áudio)
             const nameEl = document.getElementById('ai-assistant-name');
             if (nameEl) {
-                const gender = data.voice_gender || 'female';
-                nameEl.innerText = (gender === 'male') ? "Diovani" : "Val";
+                if (data.ai_name) {
+                    nameEl.innerText = data.ai_name;
+                } else {
+                    const gender = data.voice_gender || 'female';
+                    nameEl.innerText = (gender === 'male') ? "Diovani" : "Val";
+                }
             }
 
             // Fallback se não houver unidades configuradas
@@ -344,6 +354,14 @@ function initAIWidget() {
         cart.push({ name, price });
         addMessage(`✅ <strong>${name}</strong> adicionado!<br>🛒 Carrinho: ${cart.length} item(ns).<br><button class="view-cart-btn" style="margin-top: 8px; background: #17a2b8; border: none; color: white; padding: 6px 12px; border-radius: 15px; cursor: pointer; font-size: 0.9em;">Ver Carrinho / Finalizar</button>`, 'bot');
 
+        // Se for pizza e ainda não houver nenhuma borda no carrinho, sugere a borda
+        const hasCrust = cart.some(item => item.name.includes('Borda Recheada'));
+        if (name.toLowerCase().includes('pizza') && !hasCrust) {
+            setTimeout(() => askForStuffedCrust(name), 1000);
+        } else {
+            speakCartAddition(name);
+        }
+
         // Sugestão Inteligente de Bebidas
         const isDrink = (n) => /coca|guaraná|suco|cerveja|refri|água|fanta|sprite|soda|bebida|h2oh|schweppes/i.test(n);
         const hasDrink = cart.some(item => isDrink(item.name));
@@ -353,6 +371,31 @@ function initAIWidget() {
                 addMessage(`Que tal uma bebida geladinha para acompanhar? 🥤<br><button class="show-drinks-btn" style="background: #6c757d; border: none; color: white; padding: 6px 12px; border-radius: 15px; cursor: pointer; font-size: 0.85em; margin-top: 5px;">Ver Bebidas</button>`, 'bot');
             }, 1200);
         }
+    }
+
+    /**
+     * Sugere borda recheada visualmente e por voz
+     */
+    function askForStuffedCrust(pizzaName) {
+        const text = "Deseja adicionar uma borda recheada por apenas R$ 12,00?";
+
+        // Opções baseadas no val_conhecimento.txt
+        const options = [
+            { label: "🧀 Catupiry", val: "Catupiry" },
+            { label: "🧀 Cheddar", val: "Cheddar" },
+            { label: "🍫 Chocolate", val: "Chocolate" },
+            { label: "🍗 Coxinha", val: "Coxinha" }
+        ];
+
+        let buttonsHtml = options.map(opt =>
+            `<button class="crust-option-btn" data-flavor="${opt.val}" style="background: #6f42c1; border: none; color: white; padding: 6px 12px; margin: 3px; border-radius: 15px; cursor: pointer; font-size: 0.85em;">${opt.label}</button>`
+        ).join('');
+
+        addMessage(`🍕 <strong>${pizzaName}</strong> combina muito com uma borda recheada!<br>${text}<br>
+            <div style="margin-top: 8px;">${buttonsHtml}</div>
+            <button class="chat-option-btn" data-val="Não, obrigado" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 12px; margin: 3px; border-radius: 15px; cursor: pointer; font-size: 0.85em;">Não, obrigado</button>`, 'bot');
+
+        speakText(text);
     }
 
     // Finalizar Pedido
@@ -390,7 +433,12 @@ function initAIWidget() {
         msg += `\n🛒 *Itens:* \n`;
 
         cart.forEach(item => {
-            msg += `- ${item.name} (${item.price})\n`;
+            // Se for borda, agrupa com o item anterior no texto do WhatsApp
+            if (item.name.includes("Borda Recheada")) {
+                msg = msg.trimEnd() + ` + ${item.name}\n`;
+            } else {
+                msg += `- ${item.name} (${item.price})\n`;
+            }
             const priceVal = parseFloat(item.price.replace(/[^\d,]/g, '').replace(',', '.'));
             if (!isNaN(priceVal)) total += priceVal;
         });
@@ -684,6 +732,13 @@ function initAIWidget() {
             const val = e.target.getAttribute('data-val');
             input.value = val;
             handleUserMessage();
+        }
+        if (e.target.classList.contains('crust-option-btn')) {
+            const flavor = e.target.getAttribute('data-flavor');
+            const price = "R$ 12,00";
+            cart.push({ name: `Borda Recheada (${flavor})`, price: price });
+            addMessage(`✅ Borda de <strong>${flavor}</strong> adicionada à sua pizza!`, 'bot');
+            speakText(`Borda de ${flavor} adicionada!`);
         }
     });
 
@@ -1324,21 +1379,21 @@ function speakWelcome() {
     try {
         const utterance = new SpeechSynthesisUtterance();
         utterance.lang = 'pt-BR';
-        utterance.rate = 1.1;
+        utterance.rate = (window.siteConfig && window.siteConfig.ai_voice_rate) || 1.1;
         utterance.volume = 0.8;
 
         // Seleção de Voz Baseada na Config
         const voices = window.speechSynthesis.getVoices();
         let selectedVoice = null;
         const gender = (window.siteConfig && window.siteConfig.voice_gender) || 'female';
+        let assistantName = (window.siteConfig && window.siteConfig.ai_name) || "Val";
 
         // Preferências conhecidas
-        let assistantName = "Val";
         if (gender === 'female') {
             selectedVoice = voices.find(v => v.lang.includes('pt-BR') && (v.name.includes('Google') || v.name.includes('Luciana') || v.name.includes('Female')));
         } else {
             selectedVoice = voices.find(v => v.lang.includes('pt-BR') && (v.name.includes('Daniel') || v.name.includes('Male')));
-            assistantName = "Diovani";
+            if (!window.siteConfig.ai_name) assistantName = "Diovani";
         }
 
         // Atualiza Nome na UI
@@ -1357,5 +1412,73 @@ function speakWelcome() {
         sessionStorage.setItem('welcome_audio_played', 'true');
     } catch (e) {
         console.warn("Autoplay de áudio bloqueado:", e);
+    }
+}
+
+/**
+ * Faz a assistente anunciar a adição de um item ao carrinho
+ */
+function speakCartAddition(itemName) {
+    if (localStorage.getItem('site_sound_muted') === 'true' || document.hidden) return;
+    if (!window.siteConfig || window.siteConfig.ai_enabled === false) return;
+
+    if ('speechSynthesis' in window) {
+        try {
+            const utterance = new SpeechSynthesisUtterance(`${itemName} adicionado ao carrinho!`);
+            utterance.lang = 'pt-BR';
+            utterance.rate = window.siteConfig.ai_voice_rate || 1.1;
+            utterance.volume = 0.7;
+
+            const voices = window.speechSynthesis.getVoices();
+            const gender = window.siteConfig.voice_gender || 'female';
+            let selectedVoice = null;
+
+            if (gender === 'female') {
+                selectedVoice = voices.find(v => v.lang.includes('pt-BR') && (v.name.includes('Google') || v.name.includes('Luciana') || v.name.includes('Female')));
+            } else {
+                selectedVoice = voices.find(v => v.lang.includes('pt-BR') && (v.name.includes('Daniel') || v.name.includes('Male')));
+            }
+
+            if (!selectedVoice) selectedVoice = voices.find(v => v.lang.includes('pt-BR'));
+            if (selectedVoice) utterance.voice = selectedVoice;
+
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        } catch (e) {
+            console.error("Erro na síntese de voz do carrinho:", e);
+        }
+    }
+}
+
+/**
+ * Função genérica para a assistente falar qualquer texto
+ */
+function speakText(text) {
+    if (localStorage.getItem('site_sound_muted') === 'true' || document.hidden) return;
+    if (!window.siteConfig || window.siteConfig.ai_enabled === false) return;
+
+    if ('speechSynthesis' in window) {
+        try {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'pt-BR';
+            utterance.rate = window.siteConfig.ai_voice_rate || 1.1;
+            utterance.volume = 0.8;
+
+            const voices = window.speechSynthesis.getVoices();
+            const gender = window.siteConfig.voice_gender || 'female';
+            let selectedVoice = null;
+
+            if (gender === 'female') {
+                selectedVoice = voices.find(v => v.lang.includes('pt-BR') && (v.name.includes('Google') || v.name.includes('Luciana') || v.name.includes('Female')));
+            } else {
+                selectedVoice = voices.find(v => v.lang.includes('pt-BR') && (v.name.includes('Daniel') || v.name.includes('Male')));
+            }
+
+            if (!selectedVoice) selectedVoice = voices.find(v => v.lang.includes('pt-BR'));
+            if (selectedVoice) utterance.voice = selectedVoice;
+
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        } catch (e) { console.error(e); }
     }
 }

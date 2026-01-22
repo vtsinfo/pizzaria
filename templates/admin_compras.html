@@ -6,9 +6,16 @@
 <div class="container admin-container" id="compras-app">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>🛒 Histórico de Compras</h1>
-        <a href="/admin/compras/nova" class="btn btn-warning">
-            <i class="fas fa-cart-plus"></i> Nova Compra (Entrada)
-        </a>
+        <div>
+            <button class="btn btn-outline-info me-2" onclick="document.getElementById('pdfInput').click()">
+                <i class="fas fa-file-pdf"></i> Importar PDF
+            </button>
+            <input type="file" id="pdfInput" class="d-none" accept=".pdf" onchange="uploadPDF(this)">
+
+            <a href="/admin/compras/nova" class="btn btn-warning">
+                <i class="fas fa-cart-plus"></i> Nova Compra (Entrada)
+            </a>
+        </div>
     </div>
 
     <div class="card bg-dark text-light border-warning">
@@ -131,5 +138,43 @@
             }
         }
     }).mount('#compras-app');
+
+    // Função de Upload fora do escopo Vue (mais simples para input file global)
+    async function uploadPDF(input) {
+        if (!input.files || !input.files[0]) return;
+
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Loader simples visual
+        const btn = document.querySelector('.btn-outline-info');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lendo...';
+
+        try {
+            const res = await fetch('/admin/api/compras/import/pdf', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                // Sucesso: Salva dados no LocalStorage e redireciona
+                localStorage.setItem('import_compra_data', JSON.stringify(result.data));
+                window.location.href = '/admin/compras/nova?import=true';
+            } else {
+                alert("Erro na importação: " + result.message);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Erro de conexão ao enviar arquivo.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            input.value = ''; // Reset
+        }
+    }
 </script>
 {% endblock %}

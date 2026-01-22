@@ -47,10 +47,21 @@ with app.app_context():
     # Migração de Schema (Adicionar colunas novas manualmente em SQLite)
     try:
         with db.engine.connect() as conn:
-            conn.execute(text("ALTER TABLE ingredientes ADD COLUMN validade DATE"))
+            # 1. Validade em Ingredientes
+            try:
+                conn.execute(text("ALTER TABLE ingredientes ADD COLUMN validade DATE"))
+                print("--> Coluna 'validade' adicionada em Ingredientes.")
+            except Exception: pass
+            
+            # 2. Email em Unidades (Novo)
+            try:
+                conn.execute(text("ALTER TABLE unidades ADD COLUMN email VARCHAR(120)"))
+                print("--> Coluna 'email' adicionada em Unidades.")
+            except Exception: pass
+
             conn.commit()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Erro na migração de schema: {e}")
 
     if os.path.exists(os.path.join(os.path.dirname(__file__), 'fidelidade.json')):
         try:
@@ -91,6 +102,14 @@ def inject_site_config():
         "logo_url": "", # Se vazio, usa texto
         "cor_primaria": "#ffc107", # Amarelo padrão
         "ai_enabled": True, # Assistente ativado por padrão
+        "ai_name": "Val",
+        "ai_voice_rate": 1.1,
+        "delivery_enabled": True,
+        "reservations_enabled": True,
+        "loyalty_enabled": True,
+        "promotions_enabled": True,
+        "testimonials_enabled": True,
+        "banners_enabled": True,
         "voice_gender": "female", # 'female' ou 'male'
         "instagram": "",
         "facebook": "",
@@ -104,7 +123,6 @@ def inject_site_config():
                 default_config.update(saved_config)
     except Exception:
         pass # Garante que falhas no arquivo de config não tirem o site do ar
-    default_config['voice_gender'] = 'male' # Forçar Diovani para teste
     return dict(site_config=default_config, now=datetime.now())
 
 if not os.path.exists(UPLOAD_FOLDER):

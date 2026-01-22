@@ -5,109 +5,173 @@
 {% block content %}
 <div class="container pb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="m-0 fw-bold"><i class="fas fa-sliders-h text-warning"></i> Configurações do Sistema</h4>
-        <a href="/admin/dashboard" class="btn btn-outline-secondary">
+        <div>
+            <h4 class="m-0 fw-bold text-white"><i class="fas fa-cogs text-secondary"></i> Configurações do Sistema</h4>
+            <p class="text-secondary small m-0">Gerencie módulos, IA e exibição do cardápio.</p>
+        </div>
+        <a href="/admin/dashboard" class="btn btn-outline-dark">
             <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
         </a>
     </div>
 
+    <!-- Alerta de Migração (Discreto) -->
+    <div class="alert alert-dark border-secondary d-flex align-items-center mb-4" role="alert">
+        <i class="fas fa-info-circle text-info fs-4 me-3"></i>
+        <div>
+            <h6 class="alert-heading m-0 fw-bold">Onde estão os dados da loja?</h6>
+            <p class="mb-0 small text-muted">Endereço, telefone e horários agora ficam em <a href="/admin/empresa"
+                    class="text-info text-decoration-none fw-bold">Dados da Empresa</a>.</p>
+        </div>
+        <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="alert"
+            aria-label="Close"></button>
+    </div>
+
     <form method="POST" action="{{ url_for('admin.admin_config') }}" enctype="multipart/form-data">
         <div class="row g-4">
-            <!-- COLUNA ESQUERDA -->
-            <div class="col-lg-6">
-                <!-- MÓDULOS -->
-                <div class="card shadow-sm border-secondary mb-4">
-                    <div class="card-header border-secondary bg-body-tertiary py-3">
-                        <h5 class="mb-0 text-white"><i class="fas fa-puzzle-piece text-info"></i> Módulos e
-                            Funcionalidades</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-check form-switch mb-3 p-3 rounded bg-dark border border-secondary">
-                            <input class="form-check-input" type="checkbox" id="inventory_enabled"
-                                name="inventory_enabled" {% if config.get('inventory_enabled') %}checked{% endif %}>
-                            <label class="form-check-label w-100" for="inventory_enabled">
-                                <strong class="text-white">Controle de Estoque (ERP)</strong><br>
-                                <small class="text-secondary">Habilita menu de ingredientes e baixa automática.</small>
-                            </label>
 
-                            <div class="mt-2 ms-4 pt-2 border-top border-secondary">
+            <!-- COLUNA ESQUERDA: MÓDULOS E IA -->
+            <div class="col-lg-5">
+
+                <!-- Módulos Globais -->
+                <div class="card shadow-lg border-0 mb-4 bg-dark-subtle">
+                    <div class="card-header bg-transparent border-secondary py-3">
+                        <h5 class="mb-0 text-white"><i class="fas fa-puzzle-piece text-warning"></i> Funcionalidades
+                        </h5>
+                    </div>
+                    <div class="card-body bg-dark rounded-bottom p-0">
+                        <div class="list-group list-group-flush border-secondary">
+
+                            <!-- ERP -->
+                            <div class="list-group-item bg-dark border-secondary p-3">
                                 <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="allow_negative_stock"
-                                        name="allow_negative_stock" {% if config.get('allow_negative_stock') %}checked{%
-                                        endif %}>
-                                    <label class="form-check-label text-secondary" for="allow_negative_stock">
-                                        Permitir Estoque Negativo
+                                    <input class="form-check-input fs-5" type="checkbox" id="inventory_enabled"
+                                        name="inventory_enabled" {% if config.get('inventory_enabled') %}checked{% endif
+                                        %}>
+                                    <label class="form-check-label w-100 ps-2" for="inventory_enabled">
+                                        <span class="d-block fw-bold text-white">Controle de Estoque (ERP)</span>
+                                        <span class="d-block small text-secondary">Habilita menu de ingredientes e baixa
+                                            automática.</span>
+                                    </label>
+                                </div>
+                                <div class="ms-5 mt-2 ps-2 border-start border-secondary">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="allow_negative_stock"
+                                            name="allow_negative_stock" {% if config.get('allow_negative_stock')
+                                            %}checked{% endif %}>
+                                        <label class="form-check-label text-secondary small"
+                                            for="allow_negative_stock">Permitir estoque negativo</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- IA Assistant -->
+                            <div class="list-group-item bg-dark border-secondary p-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input fs-5" type="checkbox" id="ai_enabled"
+                                        name="ai_enabled" {% if config.get('ai_enabled') %}checked{% endif %}>
+                                    <label class="form-check-label w-100 ps-2" for="ai_enabled">
+                                        <span class="d-block fw-bold text-white">Assistente de IA</span>
+                                        <span class="d-block small text-secondary">Chatbot "Val" para atendimento
+                                            automático.</span>
                                     </label>
                                 </div>
                             </div>
-                        </div>
 
-                        <h6 class="text-muted text-uppercase small fw-bold mt-4 mb-3">Modos de Operação</h6>
+                            <!-- Outros Módulos -->
+                            <div class="list-group-item bg-dark border-secondary p-3">
+                                <h6 class="text-uppercase text-muted small fw-bold mb-3">Modos de Operação</h6>
 
-                        <div class="d-flex flex-column gap-2">
-                            <div class="form-check form-switch p-2 rounded hover-bg">
-                                <input class="form-check-input" type="checkbox" id="ai_enabled" name="ai_enabled" {% if
-                                    config.get('ai_enabled') %}checked{% endif %}>
-                                <label class="form-check-label" for="ai_enabled">Assistente IA (Chat)</label>
+                                <div class="d-flex flex-column gap-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="self_service_enabled"
+                                            name="self_service_enabled" {% if config.get('self_service_enabled')
+                                            %}checked{% endif %}>
+                                        <label class="form-check-label text-white"
+                                            for="self_service_enabled">Self-Service (Almoço)</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="rodizio_pizza_enabled"
+                                            name="rodizio_pizza_enabled" {% if config.get('rodizio_pizza_enabled')
+                                            %}checked{% endif %}>
+                                        <label class="form-check-label text-white" for="rodizio_pizza_enabled">Rodízio
+                                            de Pizzas</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="rodizio_carne_enabled"
+                                            name="rodizio_carne_enabled" {% if config.get('rodizio_carne_enabled')
+                                            %}checked{% endif %}>
+                                        <label class="form-check-label text-white" for="rodizio_carne_enabled">Rodízio
+                                            de Carnes</label>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="form-check form-switch p-2 rounded hover-bg">
-                                <input class="form-check-input" type="checkbox" id="self_service_enabled"
-                                    name="self_service_enabled" {% if config.get('self_service_enabled') %}checked{%
-                                    endif %}>
-                                <label class="form-check-label" for="self_service_enabled">Modo Self-Service
-                                    (Almoço)</label>
-                            </div>
-
-                            <div class="form-check form-switch p-2 rounded hover-bg">
-                                <input class="form-check-input" type="checkbox" id="rodizio_pizza_enabled"
-                                    name="rodizio_pizza_enabled" {% if config.get('rodizio_pizza_enabled') %}checked{%
-                                    endif %}>
-                                <label class="form-check-label" for="rodizio_pizza_enabled">Rodízio de Pizzas</label>
-                            </div>
-
-                            <div class="form-check form-switch p-2 rounded hover-bg">
-                                <input class="form-check-input" type="checkbox" id="rodizio_carne_enabled"
-                                    name="rodizio_carne_enabled" {% if config.get('rodizio_carne_enabled') %}checked{%
-                                    endif %}>
-                                <label class="form-check-label" for="rodizio_carne_enabled">Rodízio de Carnes</label>
-                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- CARDÁPIO / EXIBIÇÃO (Moved to Left Column to balance height) -->
-                <div class="card shadow-sm border-secondary">
-                    <div class="card-header border-secondary bg-body-tertiary py-3">
-                        <h5 class="mb-0 text-white"><i class="fas fa-list text-warning"></i> Exibição do Cardápio</h5>
+                <!-- Personalização IA -->
+                <div class="card shadow-lg border-0 bg-dark-subtle">
+                    <div class="card-header bg-transparent border-secondary py-3">
+                        <h5 class="mb-0 text-white"><i class="fas fa-robot text-info"></i> Personalização da IA</h5>
                     </div>
-                    <div class="card-body p-0">
-                        <div class="alert alert-dark m-3 border-secondary small">
-                            <i class="fas fa-info-circle"></i> Controle aqui o que aparece no site para o cliente.
+                    <div class="card-body bg-dark rounded-bottom">
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small text-uppercase">Nome da Assistente</label>
+                            <input type="text" class="form-control bg-black text-light border-secondary" name="ai_name"
+                                value="{{ config.get('ai_name', 'Val') }}">
                         </div>
-                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small text-uppercase">Voz (Text-to-Speech)</label>
+                            <select class="form-select bg-black text-light border-secondary" name="voice_gender">
+                                <option value="female" {% if config.get('voice_gender')=='female' %}selected{% endif %}>
+                                    Feminina (Padrão)</option>
+                                <option value="male" {% if config.get('voice_gender')=='male' %}selected{% endif %}>
+                                    Masculina</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- COLUNA DIREITA: CARDÁPIO -->
+            <div class="col-lg-7">
+                <div class="card shadow-lg border-0 h-100 bg-dark-subtle">
+                    <div
+                        class="card-header bg-transparent border-secondary py-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0 text-white"><i class="fas fa-list text-success"></i> Exibição do Cardápio
+                            </h5>
+                            <p class="m-0 small text-secondary">Controle o que aparece no site.</p>
+                        </div>
+                        <span class="badge bg-dark border border-secondary text-secondary">Live Preview</span>
+                    </div>
+                    <div class="card-body bg-dark rounded-bottom p-0">
+                        <div class="table-responsive h-100">
                             <table class="table table-dark table-hover mb-0 align-middle">
-                                <thead style="position: sticky; top: 0; background-color: #2c3034; z-index: 1;">
+                                <thead class="table-group-divider bg-black">
                                     <tr>
-                                        <th class="ps-3">Categoria</th>
-                                        <th class="text-center" width="20%">Visível</th>
-                                        <th class="text-center" width="20%">Preço</th>
+                                        <th class="ps-4 py-3 text-secondary text-uppercase small">Categoria</th>
+                                        <th class="text-center text-secondary text-uppercase small">Visível no Site</th>
+                                        <th class="text-center text-secondary text-uppercase small pe-4">Mostrar Preço
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for cat in categorias %}
                                     <tr>
-                                        <td class="ps-3 fw-bold">{{ cat.nome }}</td>
+                                        <td class="ps-4 fw-bold text-white">{{ cat.nome }}</td>
                                         <td class="text-center">
-                                            <div class="form-check form-switch d-flex justify-content-center">
-                                                <input class="form-check-input fs-5" type="checkbox"
+                                            <div class="form-check form-switch d-inline-block">
+                                                <input class="form-check-input fs-5 cursor-pointer" type="checkbox"
                                                     id="cat_vis_{{ cat.id }}" name="cat_visible_{{ cat.id }}" {% if
                                                     cat.visivel %}checked{% endif %}>
                                             </div>
                                         </td>
-                                        <td class="text-center">
-                                            <div class="form-check form-switch d-flex justify-content-center">
-                                                <input class="form-check-input fs-5" type="checkbox"
+                                        <td class="text-center pe-4">
+                                            <div class="form-check form-switch d-inline-block">
+                                                <input class="form-check-input fs-5 cursor-pointer" type="checkbox"
                                                     id="cat_price_{{ cat.id }}" name="cat_price_{{ cat.id }}" {% if
                                                     cat.exibir_preco %}checked{% endif %}>
                                             </div>
@@ -118,107 +182,14 @@
                             </table>
                         </div>
                     </div>
-                    <div class="card-footer border-secondary bg-body-tertiary text-center text-muted small">
-                        Salve para aplicar as alterações.
-                    </div>
                 </div>
             </div>
 
-            <!-- COLUNA DIREITA -->
-            <div class="col-lg-6">
-                <!-- GERAL -->
-                <div class="card shadow-sm border-secondary h-100">
-                    <div class="card-header border-secondary bg-body-tertiary py-3">
-                        <h5 class="mb-0 text-white"><i class="fas fa-store text-success"></i> Informações da Loja</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label text-secondary small text-uppercase fw-bold">História (Sobre
-                                    Nós)</label>
-                                <textarea class="form-control bg-dark text-light border-secondary" name="sobre_nos"
-                                    rows="4"
-                                    placeholder="Conte a história da pizzaria...">{{ config.get('sobre_nos', '') }}</textarea>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label text-secondary small text-uppercase fw-bold">Tempo de
-                                    Espera</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-dark border-secondary text-secondary"><i
-                                            class="far fa-clock"></i></span>
-                                    <input type="text" class="form-control bg-dark text-light border-secondary"
-                                        name="tempo_espera" value="{{ config.get('tempo_espera', '') }}"
-                                        placeholder="Ex: 40-50 min">
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label text-secondary small text-uppercase fw-bold">Cor
-                                    Principal</label>
-                                <div class="d-flex gap-2">
-                                    <input type="color" class="form-control form-control-color bg-dark border-secondary"
-                                        name="cor_primaria" value="{{ config.get('cor_primaria', '#ffc107') }}"
-                                        title="Escolha a cor principal">
-                                    <input type="text" class="form-control bg-dark text-light border-secondary"
-                                        value="{{ config.get('cor_primaria', '#ffc107') }}" readonly>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label text-secondary small text-uppercase fw-bold">Telefone</label>
-                                <input type="text" class="form-control bg-dark text-light border-secondary"
-                                    name="telefone" value="{{ config.get('telefone', '') }}">
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label text-secondary small text-uppercase fw-bold">WhatsApp</label>
-                                <input type="text" class="form-control bg-dark text-light border-secondary"
-                                    name="whatsapp" value="{{ config.get('whatsapp', '') }}">
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label text-secondary small text-uppercase fw-bold">Endereço
-                                    Principal</label>
-                                <input type="text" class="form-control bg-dark text-light border-secondary"
-                                    name="endereco_principal" value="{{ config.get('endereco_principal', '') }}">
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label text-secondary small text-uppercase fw-bold">Destaque do
-                                    Forno</label>
-                                <input type="text" class="form-control bg-dark text-light border-secondary"
-                                    name="tipo_forno" value="{{ config.get('tipo_forno', '') }}"
-                                    placeholder="Ex: Forno a Lenha">
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label text-secondary small text-uppercase fw-bold">Logotipo
-                                    Atual</label>
-                                <div
-                                    class="d-flex align-items-center gap-3 p-3 border border-secondary rounded bg-dark">
-                                    {% if config.get('logo_url') %}
-                                    <img src="{{ config.get('logo_url') }}" alt="Logo" class="img-fluid rounded"
-                                        style="max-height: 60px;">
-                                    {% else %}
-                                    <span class="text-muted fst-italic">Sem logo</span>
-                                    {% endif %}
-                                    <div class="flex-grow-1">
-                                        <input type="file" class="form-control bg-dark text-light border-secondary"
-                                            name="logo" accept="image/*">
-                                        <div class="form-text text-muted">Recomendado: PNG transparente.</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div class="position-fixed bottom-0 end-0 p-4" style="z-index: 100;">
-            <button type="submit" class="btn btn-success btn-lg shadow-lg rounded-pill px-5 fw-bold">
-                <i class="fas fa-check-circle me-2"></i> Salvar Alterações
+            <button type="submit" class="btn btn-warning btn-lg shadow-lg rounded-pill px-5 fw-bold text-dark">
+                <i class="fas fa-save me-2"></i> Salvar Preferências
             </button>
         </div>
     </form>

@@ -61,226 +61,235 @@
                             <option v-for="f in uniqueFornecedores" :value="f">[[ f ]]</option>
                         </select>
 
-                        <div class="d-flex gap-3 flex-wrap">
-                            <div class="form-check form-switch d-flex align-items-center text-nowrap">
-                                <input class="form-check-input me-2" type="checkbox" id="filterZero"
-                                    v-model="filterZero">
-                                <label class="form-check-label" for="filterZero">Apenas Zerados</label>
+                        <div class="form-check form-switch d-flex align-items-center text-nowrap">
+                            <input class="form-check-input me-2" type="checkbox" id="filterZero" v-model="filterZero">
+                            <label class="form-check-label" for="filterZero">Apenas Zerados</label>
+                        </div>
+                        <div class="form-check form-switch d-flex align-items-center text-nowrap">
+                            <input class="form-check-input me-2" type="checkbox" id="filterBelowMin"
+                                v-model="filterBelowMin">
+                            <label class="form-check-label text-warning fw-bold" for="filterBelowMin">Abaixo do
+                                Mínimo</label>
+                        </div>
+                        <div class="form-check form-switch d-flex align-items-center text-nowrap">
+                            <input class="form-check-input me-2" type="checkbox" id="filterValidity"
+                                v-model="filterValidity">
+                            <label class="form-check-label" for="filterValidity"
+                                title="Vencidos ou vencem em 7 dias">Validade Crítica</label>
+                        </div>
+                    </div>
+
+                    <div class="ms-auto d-flex align-items-center">
+                        <label class="me-2 small text-muted">Por pág:</label>
+                        <select class="form-select form-select-sm bg-dark text-light border-secondary"
+                            v-model.number="itemsPerPage" style="width: 70px;">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover mb-0 text-nowrap">
+                        <thead>
+                            <tr>
+                                <th @click="sortBy('nome')" class="cursor-pointer">Nome <i
+                                        :class="getSortIcon('nome')"></i></th>
+                                <th @click="sortBy('tipo')" class="cursor-pointer">Tipo <i
+                                        :class="getSortIcon('tipo')"></i></th>
+                                <th @click="sortBy('unidade')" class="cursor-pointer">Un <i
+                                        :class="getSortIcon('unidade')"></i></th>
+                                <th @click="sortBy('estoque_atual')" class="cursor-pointer">Estoque <i
+                                        :class="getSortIcon('estoque_atual')"></i></th>
+                                <th @click="sortBy('fornecedor')" class="cursor-pointer">Fornecedor <i
+                                        :class="getSortIcon('fornecedor')"></i></th>
+                                <th @click="sortBy('estoque_minimo')" class="cursor-pointer">Mínimo <i
+                                        :class="getSortIcon('estoque_minimo')"></i></th>
+                                <th @click="sortBy('validade')" class="cursor-pointer">Validade <i
+                                        :class="getSortIcon('validade')"></i></th>
+                                <th @click="sortBy('custo')" class="cursor-pointer">Custo (R$) <i
+                                        :class="getSortIcon('custo')"></i></th>
+                                <th @click="sortBy('total')" class="cursor-pointer">Total (R$) <i
+                                        :class="getSortIcon('total')"></i></th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="ing in paginatedIngredientes" :key="ing.id"
+                                :class="{'table-danger': ing.estoque_atual <= ing.estoque_minimo}">
+                                <td>[[ ing.nome ]] <i v-if="ing.estoque_atual <= ing.estoque_minimo"
+                                        class="fas fa-exclamation-triangle text-danger"></i></td>
+                                <td>
+                                    <span :class="getBadgeClass(ing.tipo)">[[ getTipoLabel(ing.tipo) ]]</span>
+                                </td>
+                                <td>[[ ing.unidade ]]</td>
+                                <td>[[ ing.estoque_atual ]]</td>
+                                <td><small class="text-muted">[[ ing.fornecedor || '-' ]]</small></td>
+                                <td>[[ ing.estoque_minimo ]]</td>
+                                <td><small :class="getValidityClass(ing.validade)">[[ formatDate(ing.validade)
+                                        ]]</small></td>
+                                <td>[[ formatCurrency(ing.custo) ]]</td>
+                                <td>[[ formatCurrency(ing.estoque_atual * ing.custo) ]]</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-info me-1" @click="editIngrediente(ing)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning me-1" @click="showHistory(ing)"
+                                        title="Histórico de Custo">
+                                        <i class="fas fa-chart-line"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" @click="deleteIngrediente(ing)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr v-if="filteredIngredientes.length === 0">
+                                <td colspan="10" class="text-center text-muted py-4">Nenhum ingrediente encontrado.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginação -->
+                <div class="d-flex justify-content-between align-items-center mt-3" v-if="totalPages > 1">
+                    <small class="text-muted">Mostrando [[ (currentPage - 1) * itemsPerPage + 1 ]] - [[
+                        Math.min(currentPage * itemsPerPage, filteredIngredientes.length) ]] de [[
+                        filteredIngredientes.length ]]</small>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item" :class="{disabled: currentPage === 1}">
+                                <button class="page-link bg-dark border-secondary text-light"
+                                    @click="currentPage--">Anterior</button>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link bg-dark border-secondary text-light">[[ currentPage ]] / [[
+                                    totalPages ]]</span>
+                            </li>
+                            <li class="page-item" :class="{disabled: currentPage === totalPages}">
+                                <button class="page-link bg-dark border-secondary text-light"
+                                    @click="currentPage++">Próxima</button>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ficha Técnica (Agora Abaixo) -->
+
+    <teleport to="body">
+        <!-- MODAL INGREDIENTE -->
+        <div class="modal fade" id="ingredienteModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content bg-dark text-light border-warning">
+                    <div class="modal-header border-warning">
+                        <h5 class="modal-title">[[ modalTitle ]]</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-8 mb-3">
+                                <label>Nome</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary"
+                                    v-model="tempIng.nome">
                             </div>
-                            <div class="form-check form-switch d-flex align-items-center text-nowrap">
-                                <input class="form-check-input me-2" type="checkbox" id="filterValidity"
-                                    v-model="filterValidity">
-                                <label class="form-check-label" for="filterValidity"
-                                    title="Vencidos ou vencem em 7 dias">Validade Crítica</label>
+                            <div class="col-4 mb-3">
+                                <label>Tipo</label>
+                                <select class="form-select bg-dark text-light border-secondary" v-model="tempIng.tipo">
+                                    <option value="insumo">Insumo</option>
+                                    <option value="revenda">Revenda</option>
+                                    <option value="produto_final">Produto Final</option>
+                                    <option value="ambos">Ambos</option>
+                                </select>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label>Fornecedor</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary"
+                                    v-model="tempIng.fornecedor" placeholder="Nome do fornecedor">
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label>Validade (Lote Atual)</label>
+                                <input type="date" class="form-control bg-dark text-light border-secondary"
+                                    v-model="tempIng.validade">
                             </div>
                         </div>
-
-                        <div class="ms-auto d-flex align-items-center">
-                            <label class="me-2 small text-muted">Por pág:</label>
-                            <select class="form-select form-select-sm bg-dark text-light border-secondary"
-                                v-model.number="itemsPerPage" style="width: 70px;">
-                                <option value="5">5</option>
-                                <option value="10">10</option>
-                                <option value="20">20</option>
-                                <option value="50">50</option>
-                            </select>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label>Unidade</label>
+                                <select class="form-select bg-dark text-light border-secondary"
+                                    v-model="tempIng.unidade">
+                                    <option value="kg">Quilos (kg)</option>
+                                    <option value="g">Gramas (g)</option>
+                                    <option value="l">Litros (l)</option>
+                                    <option value="ml">Mililitros (ml)</option>
+                                    <option value="un">Unidade (un)</option>
+                                </select>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label>Custo Unitário (R$)</label>
+                                <input type="number" step="0.01"
+                                    class="form-control bg-dark text-light border-secondary" v-model="tempIng.custo">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label>Estoque Atual</label>
+                                <input type="number" step="0.001"
+                                    class="form-control bg-dark text-light border-secondary"
+                                    v-model="tempIng.estoque_atual">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label>Estoque Mínimo (Alerta)</label>
+                                <input type="number" step="0.001"
+                                    class="form-control bg-dark text-light border-secondary"
+                                    v-model="tempIng.estoque_minimo">
+                            </div>
                         </div>
                     </div>
-
-                    <div class="table-responsive">
-                        <table class="table table-dark table-hover mb-0 text-nowrap">
-                            <thead>
-                                <tr>
-                                    <th @click="sortBy('nome')" class="cursor-pointer">Nome <i
-                                            :class="getSortIcon('nome')"></i></th>
-                                    <th @click="sortBy('tipo')" class="cursor-pointer">Tipo <i
-                                            :class="getSortIcon('tipo')"></i></th>
-                                    <th @click="sortBy('unidade')" class="cursor-pointer">Un <i
-                                            :class="getSortIcon('unidade')"></i></th>
-                                    <th @click="sortBy('estoque_atual')" class="cursor-pointer">Estoque <i
-                                            :class="getSortIcon('estoque_atual')"></i></th>
-                                    <th @click="sortBy('fornecedor')" class="cursor-pointer">Fornecedor <i
-                                            :class="getSortIcon('fornecedor')"></i></th>
-                                    <th @click="sortBy('estoque_minimo')" class="cursor-pointer">Mínimo <i
-                                            :class="getSortIcon('estoque_minimo')"></i></th>
-                                    <th @click="sortBy('validade')" class="cursor-pointer">Validade <i
-                                            :class="getSortIcon('validade')"></i></th>
-                                    <th @click="sortBy('custo')" class="cursor-pointer">Custo (R$) <i
-                                            :class="getSortIcon('custo')"></i></th>
-                                    <th @click="sortBy('total')" class="cursor-pointer">Total (R$) <i
-                                            :class="getSortIcon('total')"></i></th>
-                                    <th class="text-end">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="ing in paginatedIngredientes" :key="ing.id"
-                                    :class="{'table-danger': ing.estoque_atual <= ing.estoque_minimo}">
-                                    <td>[[ ing.nome ]] <i v-if="ing.estoque_atual <= ing.estoque_minimo"
-                                            class="fas fa-exclamation-triangle text-danger"></i></td>
-                                    <td>
-                                        <span :class="getBadgeClass(ing.tipo)">[[ getTipoLabel(ing.tipo) ]]</span>
-                                    </td>
-                                    <td>[[ ing.unidade ]]</td>
-                                    <td>[[ ing.estoque_atual ]]</td>
-                                    <td><small class="text-muted">[[ ing.fornecedor || '-' ]]</small></td>
-                                    <td>[[ ing.estoque_minimo ]]</td>
-                                    <td><small :class="getValidityClass(ing.validade)">[[ formatDate(ing.validade)
-                                            ]]</small></td>
-                                    <td>[[ formatCurrency(ing.custo) ]]</td>
-                                    <td>[[ formatCurrency(ing.estoque_atual * ing.custo) ]]</td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-info me-1" @click="editIngrediente(ing)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-warning me-1" @click="showHistory(ing)"
-                                            title="Histórico de Custo">
-                                            <i class="fas fa-chart-line"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger" @click="deleteIngrediente(ing)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr v-if="filteredIngredientes.length === 0">
-                                    <td colspan="10" class="text-center text-muted py-4">Nenhum ingrediente encontrado.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Paginação -->
-                    <div class="d-flex justify-content-between align-items-center mt-3" v-if="totalPages > 1">
-                        <small class="text-muted">Mostrando [[ (currentPage - 1) * itemsPerPage + 1 ]] - [[
-                            Math.min(currentPage * itemsPerPage, filteredIngredientes.length) ]] de [[
-                            filteredIngredientes.length ]]</small>
-                        <nav>
-                            <ul class="pagination pagination-sm mb-0">
-                                <li class="page-item" :class="{disabled: currentPage === 1}">
-                                    <button class="page-link bg-dark border-secondary text-light"
-                                        @click="currentPage--">Anterior</button>
-                                </li>
-                                <li class="page-item disabled">
-                                    <span class="page-link bg-dark border-secondary text-light">[[ currentPage ]] / [[
-                                        totalPages ]]</span>
-                                </li>
-                                <li class="page-item" :class="{disabled: currentPage === totalPages}">
-                                    <button class="page-link bg-dark border-secondary text-light"
-                                        @click="currentPage++">Próxima</button>
-                                </li>
-                            </ul>
-                        </nav>
+                    <div class="modal-footer border-warning">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-warning" @click="saveIngrediente">Salvar</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Ficha Técnica (Agora Abaixo) -->
-
-    </div>
-
-    <!-- MODAL INGREDIENTE -->
-    <div class="modal fade" id="ingredienteModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content bg-dark text-light border-warning">
-                <div class="modal-header border-warning">
-                    <h5 class="modal-title">[[ modalTitle ]]</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-8 mb-3">
-                            <label>Nome</label>
-                            <input type="text" class="form-control bg-dark text-light border-secondary"
-                                v-model="tempIng.nome">
-                        </div>
-                        <div class="col-4 mb-3">
-                            <label>Tipo</label>
-                            <select class="form-select bg-dark text-light border-secondary" v-model="tempIng.tipo">
-                                <option value="insumo">Insumo</option>
-                                <option value="revenda">Revenda</option>
-                                <option value="produto_final">Produto Final</option>
-                                <option value="ambos">Ambos</option>
-                            </select>
-                        </div>
-                        <div class="col-12 mb-3">
-                            <label>Fornecedor</label>
-                            <input type="text" class="form-control bg-dark text-light border-secondary"
-                                v-model="tempIng.fornecedor" placeholder="Nome do fornecedor">
-                        </div>
-                        <div class="col-12 mb-3">
-                            <label>Validade (Lote Atual)</label>
-                            <input type="date" class="form-control bg-dark text-light border-secondary"
-                                v-model="tempIng.validade">
-                        </div>
+        <!-- MODAL HISTÓRICO (GRÁFICO) -->
+        <div class="modal fade" id="historyModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content bg-dark text-light border-warning">
+                    <div class="modal-header border-warning">
+                        <h5 class="modal-title"><i class="fas fa-chart-line text-warning"></i> Histórico de Custo: [[
+                            selectedIngName ]]</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <label>Unidade</label>
-                            <select class="form-select bg-dark text-light border-secondary" v-model="tempIng.unidade">
-                                <option value="kg">Quilos (kg)</option>
-                                <option value="g">Gramas (g)</option>
-                                <option value="l">Litros (l)</option>
-                                <option value="ml">Mililitros (ml)</option>
-                                <option value="un">Unidade (un)</option>
-                            </select>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <label>Custo Unitário (R$)</label>
-                            <input type="number" step="0.01" class="form-control bg-dark text-light border-secondary"
-                                v-model="tempIng.custo">
-                        </div>
-                        <div class="col-6 mb-3">
-                            <label>Estoque Atual</label>
-                            <input type="number" step="0.001" class="form-control bg-dark text-light border-secondary"
-                                v-model="tempIng.estoque_atual">
-                        </div>
-                        <div class="col-6 mb-3">
-                            <label>Estoque Mínimo (Alerta)</label>
-                            <input type="number" step="0.001" class="form-control bg-dark text-light border-secondary"
-                                v-model="tempIng.estoque_minimo">
-                        </div>
+                    <div class="modal-body">
+                        <canvas id="historyChart" style="max-height: 400px;"></canvas>
                     </div>
                 </div>
-                <div class="modal-footer border-warning">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-warning" @click="saveIngrediente">Salvar</button>
-                </div>
             </div>
         </div>
-    </div>
 
-    <!-- MODAL HISTÓRICO (GRÁFICO) -->
-    <div class="modal fade" id="historyModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content bg-dark text-light border-warning">
-                <div class="modal-header border-warning">
-                    <h5 class="modal-title"><i class="fas fa-chart-line text-warning"></i> Histórico de Custo: [[
-                        selectedIngName ]]</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <canvas id="historyChart" style="max-height: 400px;"></canvas>
+        <!-- MODAL GRÁFICO FORNECEDORES -->
+        <div class="modal fade" id="supplierChartModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content bg-dark text-light border-info">
+                    <div class="modal-header border-info">
+                        <h5 class="modal-title"><i class="fas fa-chart-pie text-info"></i> Distribuição por Fornecedor
+                            (Valor R$)</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <canvas id="supplierChartCanvas" style="max-height: 400px;"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- MODAL GRÁFICO FORNECEDORES -->
-    <div class="modal fade" id="supplierChartModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content bg-dark text-light border-info">
-                <div class="modal-header border-info">
-                    <h5 class="modal-title"><i class="fas fa-chart-pie text-info"></i> Distribuição por Fornecedor
-                        (Valor R$)</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <canvas id="supplierChartCanvas" style="max-height: 400px;"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
+</div>
+</teleport>
 
 </div>
 {% endblock %}
@@ -297,6 +306,7 @@
             return {
                 search: '',
                 filterZero: false,
+                filterBelowMin: false,
                 filterFornecedor: '',
                 filterValidity: false,
                 sortKey: 'nome',
@@ -339,6 +349,10 @@
                     result = result.filter(i => i.fornecedor === this.filterFornecedor);
                 }
 
+                if (this.filterBelowMin) {
+                    result = result.filter(i => i.estoque_atual <= i.estoque_minimo);
+                }
+
                 if (this.filterValidity) {
                     const today = new Date();
                     const nextWeek = new Date();
@@ -358,14 +372,6 @@
 
                 // Ordenação
                 result.sort((a, b) => {
-                    // Prioriza itens com estoque baixo se não houver ordenação específica ou se for a padrão
-                    if (this.sortKey === 'nome' && this.sortAsc) {
-                        const aLow = a.estoque_atual <= a.estoque_minimo;
-                        const bLow = b.estoque_atual <= b.estoque_minimo;
-                        if (aLow && !bLow) return -1;
-                        if (!aLow && bLow) return 1;
-                    }
-
                     let valA = a[this.sortKey];
                     let valB = b[this.sortKey];
 

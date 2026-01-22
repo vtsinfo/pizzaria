@@ -1,14 +1,20 @@
 {
     "nome_fantasia": "Pizzaria Colonial",
-    "whatsapp": "5511939991234",
-    "telefone": "(11) 2015-4049",
-    "endereco_principal": "Rua Virg\u00ednia Ferni, 1758 - Itaquera, SP",
-    "cor_primaria": "#a98e3d",
+    "whatsapp": "",
+    "telefone": "",
+    "endereco_principal": "",
+    "cor_primaria": "#ffc107",
     "instagram": "",
     "facebook": "",
     "inventory_enabled": true,
     "allow_negative_stock": true,
     "ai_enabled": true,
+    "delivery_enabled": false,
+    "reservations_enabled": false,
+    "loyalty_enabled": false,
+    "promotions_enabled": false,
+    "testimonials_enabled": false,
+    "banners_enabled": false,
     "self_service_enabled": true,
     "self_service_days": "Segunda a Sexta: 11h \u00e0s 15h",
     "rodizio_carne_enabled": true,
@@ -16,7 +22,7 @@
     "rodizio_pizza_enabled": true,
     "rodizio_pizza_days": "Todos os dias, 18h \u00e0s 23h",
     "logo_url": "",
-    "tempo_espera": "40-50 min",
+    "tempo_espera": "",
     "units": [
         {
             "address": "Rua Virg\u00ednia Ferni, 1758 - Itaquera, S\u00e3o Paulo - SP",
@@ -48,5 +54,12 @@
         }
     ],
     "tipo_forno": "",
-    "sobre_nos": ""
+    "sobre_nos": "",
+    "voice_gender": "female",
+    "ai_name": "Andressa",
+    "ai_voice_rate": 1.1,
+    "razao_social": "",
+    "cnpj": "",
+    "ie": "",
+    "email": ""
 }

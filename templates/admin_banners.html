@@ -87,7 +87,7 @@
                             <div class="card-body">
                                 <h6 class="card-title text-warning">${ban.title}</h6>
                                 <p class="card-text small text-white-50 mb-1">${ban.subtitle || ''}</p>
-                                <p class="card-text small mb-2"><span class="badge bg-secondary">${ban.link_text} ➔ ${ban.link_url}</span></p>
+                                ${ban.link_text ? `<p class="card-text small mb-2"><span class="badge bg-secondary">${ban.link_text} ➔ ${ban.link_url}</span></p>` : ''}
                                 <div class="text-end">
                                     <button class="btn btn-sm btn-outline-danger" onclick="deleteBanner(${ban.id})">Remover</button>
                                 </div>

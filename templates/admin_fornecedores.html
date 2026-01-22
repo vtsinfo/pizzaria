@@ -67,8 +67,8 @@
                     </div>
                     <div class="mb-3">
                         <label>CNPJ</label>
-                        <input type="text" class="form-control bg-dark text-light border-secondary"
-                            v-model="tempF.cnpj">
+                        <input type="text" class="form-control bg-dark text-light border-secondary mask-cnpj"
+                            v-model="tempF.cnpj" placeholder="00.000.000/0000-00">
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -78,8 +78,8 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label>Telefone</label>
-                            <input type="text" class="form-control bg-dark text-light border-secondary"
-                                v-model="tempF.telefone">
+                            <input type="text" class="form-control bg-dark text-light border-secondary mask-phone"
+                                v-model="tempF.telefone" placeholder="(00) 00000-0000">
                         </div>
                     </div>
                     <div class="mb-3">
@@ -119,6 +119,10 @@
             const modalEl = document.getElementById('fornecedorModal');
             if (modalEl) this.modalInstance = new bootstrap.Modal(modalEl);
         },
+        updated() {
+            // Re-apply masks when DOM updates (e.g. modal opens)
+            if (window.applyMasks) window.applyMasks();
+        },
         methods: {
             loadFornecedores() {
                 fetch('/admin/api/fornecedores')
@@ -132,42 +136,44 @@
                 }
                 if (this.modalInstance) this.modalInstance.show();
             },
-            editFornecedor(f) {
-                this.modalTitle = 'Editar Fornecedor';
-                this.tempF = { ...f };
-                if (this.modalInstance) this.modalInstance.show();
+            if(this.modalInstance) this.modalInstance.show();
             },
-            saveFornecedor() {
-                if (!this.tempF.nome_empresa) return alert("Nome da empresa é obrigatório");
+    editFornecedor(f) {
+        this.modalTitle = 'Editar Fornecedor';
+        this.tempF = { ...f };
+        if (this.modalInstance) this.modalInstance.show();
+    },
+    saveFornecedor() {
+        if (!this.tempF.nome_empresa) return alert("Nome da empresa é obrigatório");
 
-                fetch('/admin/api/fornecedores', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(this.tempF)
-                })
-                    .then(r => r.json())
-                    .then(res => {
-                        if (res.success) {
-                            this.loadFornecedores();
-                            if (this.modalInstance) this.modalInstance.hide();
-                        } else {
-                            alert("Erro: " + res.message);
-                        }
-                    });
-            },
-            deleteFornecedor(f) {
-                if (!confirm(`Excluir ${f.nome_empresa}?`)) return;
-                fetch('/admin/api/fornecedores', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: f.id })
-                })
-                    .then(r => r.json())
-                    .then(res => {
-                        if (res.success) this.loadFornecedores();
-                        else alert("Erro: " + res.message);
-                    });
-            }
+        fetch('/admin/api/fornecedores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.tempF)
+        })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    this.loadFornecedores();
+                    if (this.modalInstance) this.modalInstance.hide();
+                } else {
+                    alert("Erro: " + res.message);
+                }
+            });
+    },
+    deleteFornecedor(f) {
+        if (!confirm(`Excluir ${f.nome_empresa}?`)) return;
+        fetch('/admin/api/fornecedores', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: f.id })
+        })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) this.loadFornecedores();
+                else alert("Erro: " + res.message);
+            });
+    }
         }
     }).mount('#fornecedores-app');
 </script>

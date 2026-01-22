@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, session, jsonify, Response, send_file, current_app
-from models import Fidelidade, db, Pedido, ItemPedido, Ingrediente, FichaTecnica, Produto, User, Cupom, Banner, Reserva, Depoimento, Categoria
+from models import Fidelidade, db, Pedido, ItemPedido, Ingrediente, FichaTecnica, Produto, User, Cupom, Banner, Reserva, Depoimento, Categoria, Unidade
 from functools import wraps
 import os
+import re
 import json
 import csv
 import io
@@ -151,10 +152,9 @@ def api_admin_cardapio():
         categorias_db = Categoria.query.order_by(Categoria.ordem).all()
         
         for cat in categorias_db:
-            # Filtra produtos que são venáveis (fabricado, revenda, ou sem tipo)
-            # Exclui apenas 'insumo' (matéria-prima pura)
+            # Filtra produtos que são fabricados (exclui revenda e insumo puros)
             produtos_db = Produto.query.filter_by(categoria_id=cat.id).filter(
-                (Produto.tipo != 'insumo')
+                Produto.tipo == 'fabricado'
             ).all()
             print(f"DEBUG: Category '{cat.nome}' (ID: {cat.id}) products found for recipes: {[f'{p.nome} (Tipo: {p.tipo})' for p in produtos_db]}")
             
@@ -584,8 +584,17 @@ def admin_config():
             config['inventory_enabled'] = 'inventory_enabled' in request.form
             config['allow_negative_stock'] = 'allow_negative_stock' in request.form
             config['ai_enabled'] = 'ai_enabled' in request.form
+            config['delivery_enabled'] = 'delivery_enabled' in request.form
+            config['reservations_enabled'] = 'reservations_enabled' in request.form
+            config['loyalty_enabled'] = 'loyalty_enabled' in request.form
+            config['promotions_enabled'] = 'promotions_enabled' in request.form
+            config['testimonials_enabled'] = 'testimonials_enabled' in request.form
+            config['banners_enabled'] = 'banners_enabled' in request.form
             
             config['tempo_espera'] = request.form.get('tempo_espera', '')
+            config['voice_gender'] = request.form.get('voice_gender', 'female')
+            config['ai_name'] = request.form.get('ai_name', 'Val')
+            config['ai_voice_rate'] = float(request.form.get('ai_voice_rate', 1.1))
             config['telefone'] = request.form.get('telefone', '')
             config['whatsapp'] = request.form.get('whatsapp', '')
             config['endereco_principal'] = request.form.get('endereco_principal', '')
@@ -633,7 +642,95 @@ def admin_config():
     categorias = Categoria.query.order_by(Categoria.ordem).all()
     return render_template('admin_config.html', config=config, categorias=categorias)
 
-# --- FORNECEDORES (CRUD) ---
+    categorias = Categoria.query.order_by(Categoria.ordem).all()
+    return render_template('admin_config.html', config=config, categorias=categorias)
+
+# --- GESTÃO DA EMPRESA E UNIDADES ---
+@admin_bp.route('/empresa', methods=['GET', 'POST'])
+@login_required
+def admin_empresa():
+    config_path = os.path.join(current_app.root_path, 'config.json')
+    
+    if request.method == 'POST':
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            
+            # Atualiza dados da Matriz/Fiscal
+            config['razao_social'] = request.form.get('razao_social', '')
+            config['nome_fantasia'] = request.form.get('nome_fantasia', '')
+            config['cnpj'] = request.form.get('cnpj', '')
+            config['ie'] = request.form.get('ie', '')
+            config['telefone'] = request.form.get('telefone_principal', '')
+            config['email'] = request.form.get('email_principal', '') # Novo Email Matriz
+            
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=4)
+            
+            flash('Dados da empresa atualizados com sucesso!', 'success')
+            return redirect(url_for('admin.admin_empresa'))
+        except Exception as e:
+            flash(f'Erro ao salvar: {str(e)}', 'danger')
+            return redirect(url_for('admin.admin_empresa'))
+
+    # GET
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+    except: config = {}
+    
+    unidades = Unidade.query.all()
+    return render_template('admin_empresa.html', config=config, unidades=unidades)
+
+@admin_bp.route('/unidades/save', methods=['POST'])
+@login_required
+def save_unidade():
+    try:
+        id_ = request.form.get('id')
+        nome = request.form.get('nome')
+        endereco = request.form.get('endereco')
+        telefone = request.form.get('telefone')
+        whatsapp = request.form.get('whatsapp')
+        email = request.form.get('email') # Novo Email
+        instagram = request.form.get('instagram')
+        facebook = request.form.get('facebook')
+        
+        if id_:
+            u = Unidade.query.get(id_)
+            if u:
+                u.nome = nome
+                u.endereco = endereco
+                u.telefone = telefone
+                u.whatsapp = whatsapp
+                u.email = email
+                u.instagram = instagram
+                u.facebook = facebook
+                flash('Unidade atualizada!', 'success')
+        else:
+            u = Unidade(nome=nome, endereco=endereco, telefone=telefone, whatsapp=whatsapp, email=email, instagram=instagram, facebook=facebook)
+            db.session.add(u)
+            flash('Nova unidade cadastrada!', 'success')
+            
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao salvar unidade: {str(e)}', 'danger')
+        
+    return redirect(url_for('admin.admin_empresa'))
+
+@admin_bp.route('/unidades/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_unidade(id):
+    try:
+        u = Unidade.query.get_or_404(id)
+        db.session.delete(u)
+        db.session.commit()
+        flash('Unidade removida com sucesso.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao remover: {str(e)}', 'danger')
+    return redirect(url_for('admin.admin_empresa'))
+
 @admin_bp.route('/api/fornecedores', methods=['GET', 'POST', 'DELETE'])
 @login_required
 def api_fornecedores():
@@ -758,18 +855,68 @@ def api_compras():
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
 
-@admin_bp.route('/admin/fornecedores')
+@admin_bp.route('/fornecedores')
 @login_required
 def admin_fornecedores():
     return render_template('admin_fornecedores.html', title='Gestão de Fornecedores')
 
-@admin_bp.route('/admin/compras')
+@admin_bp.route('/compras')
 @login_required
 def admin_compras():
     return render_template('admin_compras.html', title='Histórico de Compras')
 
-@admin_bp.route('/admin/compras/nova')
+@admin_bp.route('/compras/nova')
 @login_required
 def admin_nova_compra():
     return render_template('admin_nova_compra.html', title='Nova Compra')
 
+# --- API IMPORTAÇÃO ---
+@admin_bp.route('/api/compras/import/pdf', methods=['POST'])
+@login_required
+def import_invoice_pdf():
+    if 'file' not in request.files:
+        return jsonify({"success": False, "message": "Nenhum arquivo enviado"}), 400
+
+    try:
+        from services.invoice_parser import extract_invoice_data
+    except ImportError:
+        return jsonify({"success": False, "message": "Biblioteca 'pypdf' não instalada. Execute: pip install pypdf"}), 500
+        
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"success": False, "message": "Arquivo vazio"}), 400
+        
+    try:
+        data = extract_invoice_data(file.stream)
+        if not data:
+            return jsonify({"success": False, "message": "Não foi possível ler o PDF. Verifique se é um PDF de texto (não imagem)."}), 400
+            
+        # Tenta encontrar fornecedor pelo CNPJ
+        fornecedor_id = None
+        if data.get('cnpj_fornecedor'):
+            # Limpa CNPJ para busca
+            cnpj_limpo = re.sub(r'\D', '', data['cnpj_fornecedor'])
+            # Aqui assumimos que no banco pode estar formatado ou não, ideal seria normalizar.
+            # Vamos tentar busca exata da string por enquanto
+            f = Fornecedor.query.filter(Fornecedor.cnpj.like(f"%{data['cnpj_fornecedor']}%")).first()
+            if f:
+                fornecedor_id = f.id
+                
+        # Tenta correlacionar itens (DePara simples por nome exato ou similaridade futura)
+        # Por enquanto devolvemos texto cru e o front resolve
+        
+        response_data = {
+            "success": True,
+            "data": {
+                "fornecedor_id": fornecedor_id,
+                "cnpj_detectado": data['cnpj_fornecedor'],
+                "nota_fiscal": data['numero_nota'],
+                "data": data['data_emissao'],
+                "observacao": "Importado via PDF",
+                "itens": data['itens']
+            }
+        }
+        return jsonify(response_data)
+        
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Erro interno: {str(e)}"}), 500

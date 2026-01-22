@@ -62,9 +62,13 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark">
                             <li><a class="dropdown-item" href="/admin/produtos">Produtos & Receitas</a></li>
-                            {% if site_config.inventory_enabled %}
                             <li><a class="dropdown-item" href="/admin/estoque">Ingredientes (Estoque)</a></li>
-                            {% endif %}
+                            <li><a class="dropdown-item" href="/admin/compras">Compras / Entrada</a></li>
+                            <li><a class="dropdown-item" href="/admin/estoque/baixo">Relatório Baixo Estoque</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="/admin/fornecedores">Cadastro de Fornecedores</a></li>
                             <li><a class="dropdown-item" href="/admin/motoboys">Motoboys</a></li>
                         </ul>
                     </li>
@@ -77,13 +81,6 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark">
                             <li><a class="dropdown-item" href="/admin/banners">Banners da Home</a></li>
-                            <li><a class="dropdown-item" href="/admin/estoque">Gerenciar Ingredientes</a></li>
-                            <li><a class="dropdown-item" href="/admin/compras">Compras / Entrada</a></li>
-                            <li><a class="dropdown-item" href="/admin/estoque/baixo">Relatório Baixo Estoque</a></li>
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-                            <li><a class="dropdown-item" href="/admin/fornecedores">Cadastro de Fornecedores</a></li>
                             <li><a class="dropdown-item" href="/admin/depoimentos">Depoimentos</a></li>
                             <li><a class="dropdown-item" href="/admin/cupons">Cupons de Desconto</a></li>
                             <li><a class="dropdown-item" href="/admin/promocoes">Promoções Agendadas</a></li>
@@ -102,8 +99,10 @@
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
+                            <li><a class="dropdown-item" href="/admin/empresa"><i class="fas fa-building"></i>
+                                    Dados da Empresa (Matriz/Filiais)</a></li>
                             <li><a class="dropdown-item" href="/admin/config"><i class="fas fa-sliders-h"></i>
-                                    Configurações (Loja)</a></li>
+                                    Configurações (Sistema)</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -124,7 +123,51 @@
         {% block content %}{% endblock %}
     </div>
 
+    <!-- Address Search Modal (Global) -->
+    <div class="modal fade" id="addressSearchModal" tabindex="-1" style="z-index: 9999;">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark text-light border-warning">
+                <div class="modal-header border-warning">
+                    <h5 class="modal-title"><i class="fas fa-search-location text-warning"></i> Pesquisar Endereço</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-2">
+                            <label>UF</label>
+                            <select id="searchUF" class="form-select bg-dark text-light border-secondary">
+                                <option value="SP" selected>SP</option>
+                                <option value="RJ">RJ</option>
+                                <option value="MG">MG</option>
+                                <option value="RS">RS</option>
+                                <option value="PR">PR</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label>Cidade</label>
+                            <input type="text" id="searchCity" class="form-control bg-dark text-light border-secondary"
+                                value="São Paulo">
+                        </div>
+                        <div class="col-md-6">
+                            <label>Parte do Endereço</label>
+                            <div class="input-group">
+                                <input type="text" id="searchStreet"
+                                    class="form-control bg-dark text-light border-secondary" placeholder="Ex: Paulista">
+                                <button class="btn btn-warning" id="btnSearchAddress">Buscar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="border-secondary">
+                    <div id="addressResults" style="max-height: 300px; overflow-y: auto;">
+                        <p class="text-muted text-center py-3">Preencha e clique em buscar.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/admin_validation.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 

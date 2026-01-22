@@ -12,10 +12,10 @@
 
     <div v-else>
         <!-- Área de Importação/Exportação -->
-        <div class="card p-3 mb-4 border-dashed bg-light">
-            <div class="d-flex gap-2 align-items-center">
-                <span class="fw-bold text-secondary me-2">Gestão em Massa:</span>
-                <a href="/admin/cardapio/template" class="btn btn-outline-secondary btn-sm">📥 Baixar Modelo</a>
+        <div class="card p-3 mb-4 border-dashed bg-dark border-secondary">
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <span class="fw-bold text-white me-2">Gestão em Massa:</span>
+                <a href="/admin/cardapio/template" class="btn btn-outline-light btn-sm">📥 Baixar Modelo</a>
 
                 <form class="d-inline" action="/admin/cardapio/import" method="post" enctype="multipart/form-data">
                     <input type="file" name="file" id="csvFile" class="d-none" accept=".csv"
@@ -23,15 +23,15 @@
                     <label for="csvFile" class="btn btn-primary btn-sm pointer">📤 Importar CSV</label>
                 </form>
 
-                <a href="/admin/cardapio/restore" class="btn btn-outline-secondary btn-sm"
+                <a href="/admin/cardapio/restore" class="btn btn-outline-light btn-sm"
                     onclick="return confirm('Restaurar backup?')">↺ Restaurar</a>
 
-                <button class="btn btn-outline-secondary btn-sm" @click="openConfigModal">⚙️ Exibição</button>
-                <a href="/api/cardapio/pdf" target="_blank" class="btn btn-outline-secondary btn-sm">📄 PDF</a>
+                <button class="btn btn-outline-light btn-sm" @click="openConfigModal">⚙️ Exibição</button>
+                <a href="/api/cardapio/pdf" target="_blank" class="btn btn-outline-light btn-sm">📄 PDF</a>
                 <button class="btn btn-success btn-sm" @click="shareWhatsApp">📲 Enviar Zap</button>
-                <button class="btn btn-outline-secondary btn-sm" @click="showPreview = true">👁️ Preview</button>
+                <button class="btn btn-outline-light btn-sm" @click="showPreview = true">👁️ Preview</button>
             </div>
-            <small class="text-muted mt-2 d-block">Baixe o modelo, edite no Excel mantendo o formato CSV (separado
+            <small class="text-secondary mt-2 d-block">Baixe o modelo, edite no Excel mantendo o formato CSV (separado
                 por ponto e vírgula) e importe para atualizar preços e itens rapidamente.</small>
         </div>
 

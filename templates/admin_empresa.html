@@ -1,0 +1,316 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Dados da Empresa - Admin Colonial{% endblock %}
+
+{% block content %}
+<div class="container pb-5" id="company-app">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="m-0 fw-bold text-white"><i class="fas fa-building text-warning"></i> Dados da Empresa</h4>
+            <p class="text-muted small m-0">Gerencie as informações fiscais e unidades da pizzaria.</p>
+        </div>
+        <a href="/admin/dashboard" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <form method="POST" action="{{ url_for('admin.admin_empresa') }}" enctype="multipart/form-data">
+        <div class="row g-4">
+            <!-- DADOS FISCAIS / MATRIZ -->
+            <div class="col-lg-12">
+                <div class="card shadow-sm border-secondary mb-4">
+                    <div
+                        class="card-header border-secondary bg-body-tertiary py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-white"><i class="fas fa-info-circle text-info"></i> Informações Cadastrais
+                        </h5>
+                        <div class="badge bg-warning text-dark">Matriz</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small text-uppercase fw-bold">Razão
+                                    Social</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary"
+                                    name="razao_social" value="{{ config.get('razao_social', '') }}"
+                                    placeholder="Ex: Pizzaria Colonial Ltda">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small text-uppercase fw-bold">Nome
+                                    Fantasia</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary"
+                                    name="nome_fantasia" value="{{ config.get('nome_fantasia', '') }}"
+                                    placeholder="Ex: Colonial Pizzaria">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-secondary small text-uppercase fw-bold">CNPJ</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary mask-cnpj"
+                                    name="cnpj" value="{{ config.get('cnpj', '') }}" placeholder="00.000.000/0000-00">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-secondary small text-uppercase fw-bold">Inscrição
+                                    Estadual</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary" name="ie"
+                                    value="{{ config.get('ie', '') }}">
+                            </div>
+
+                            <!-- Endereço Estruturado (Matriz) -->
+                            <div class="col-12 mt-3">
+                                <h6 class="text-warning border-bottom border-secondary pb-2">Endereço Principal</h6>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-secondary small text-uppercase fw-bold">CEP</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control bg-dark text-light border-secondary mask-cep"
+                                        name="cep" placeholder="00000-000">
+                                    <button type="button" class="btn btn-outline-warning search-cep-btn"
+                                        title="Pesquisar"><i class="fas fa-search"></i></button>
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <label class="form-label text-secondary small text-uppercase fw-bold">Logradouro</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary"
+                                    name="endereco_principal" value="{{ config.get('endereco_principal', '') }}"
+                                    placeholder="Rua, Av..." id="matriz_logradouro">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-secondary small text-uppercase fw-bold">Número</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary"
+                                    name="numero" id="matriz_numero">
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label text-secondary small text-uppercase fw-bold">Bairro</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary"
+                                    name="bairro">
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label text-secondary small text-uppercase fw-bold">Cidade</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary"
+                                    name="cidade">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-secondary small text-uppercase fw-bold">UF</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary"
+                                    name="estado">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-secondary small text-uppercase fw-bold">Telefone
+                                    Principal</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary mask-phone"
+                                    name="telefone_principal" value="{{ config.get('telefone', '') }}">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label text-secondary small text-uppercase fw-bold"><i
+                                        class="fas fa-envelope text-white"></i> Email</label>
+                                <input type="email" class="form-control bg-dark text-light border-secondary"
+                                    name="email_principal" value="{{ config.get('email', '') }}"
+                                    placeholder="contato@pizzaria.com">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small text-uppercase fw-bold"><i
+                                        class="fab fa-instagram text-danger"></i> Instagram (URL)</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary"
+                                    name="instagram_principal" value="{{ config.get('instagram', '') }}"
+                                    placeholder="https://instagram.com/...">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-secondary small text-uppercase fw-bold"><i
+                                        class="fab fa-facebook text-primary"></i> Facebook (URL)</label>
+                                <input type="text" class="form-control bg-dark text-light border-secondary"
+                                    name="facebook_principal" value="{{ config.get('facebook', '') }}"
+                                    placeholder="https://facebook.com/...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UNIDADES -->
+            <div class="col-lg-12">
+                <div class="card shadow-sm border-secondary">
+                    {% if unidades|length > 0 %}
+                    <div
+                        class="card-header border-secondary bg-body-tertiary py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-white"><i class="fas fa-map-marker-alt text-danger"></i> Unidades</h5>
+                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
+                            data-bs-target="#modalUnidade">
+                            <i class="fas fa-plus"></i> Nova Unidade
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover mb-0 align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">Nome da Unidade</th>
+                                        <th>Endereço</th>
+                                        <th>Contato</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-end pe-4">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for unidade in unidades %}
+                                    <tr>
+                                        <td class="ps-4 fw-bold">{{ unidade.nome }}</td>
+                                        <td><small>{{ unidade.endereco }}</small></td>
+                                        <td>
+                                            <div class="small">
+                                                <i class="fab fa-whatsapp text-success"></i> {{ unidade.whatsapp or '-'
+                                                }}<br>
+                                                <i class="fas fa-phone text-secondary"></i> {{ unidade.telefone or '-'
+                                                }}
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if unidade.ativo %}
+                                            <span class="badge bg-success">Ativa</span>
+                                            {% else %}
+                                            <span class="badge bg-danger">Inativa</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            <button type="button" class="btn btn-sm btn-outline-info me-2"
+                                                onclick="editUnidade({{ unidade.id }}, '{{ unidade.nome }}', '{{ unidade.endereco }}', '{{ unidade.telefone }}', '{{ unidade.whatsapp }}', '{{ unidade.instagram }}', '{{ unidade.facebook }}', '{{ unidade.email or '' }}')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <form action="{{ url_for('admin.delete_unidade', id=unidade.id) }}"
+                                                method="POST" class="d-inline"
+                                                onsubmit="return confirm('Tem certeza?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- EMPTY STATE -->
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-store-slash fa-3x text-secondary mb-3"></i>
+                        <h5 class="text-white">Nenhuma filial cadastrada</h5>
+                        <p class="text-muted">Se sua pizzaria possui outras unidades, cadastre-as aqui.</p>
+                        <button type="button" class="btn btn-outline-success" data-bs-toggle="modal"
+                            data-bs-target="#modalUnidade">
+                            <i class="fas fa-plus"></i> Adicionar Unidade
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="position-fixed bottom-0 end-0 p-4" style="z-index: 100;">
+            <button type="submit" class="btn btn-primary btn-lg shadow-lg rounded-pill px-5 fw-bold">
+                <i class="fas fa-save me-2"></i> Salvar Dados da Matriz
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Modal Unidade -->
+<div class="modal fade" id="modalUnidade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Gerenciar Unidade</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('admin.save_unidade') }}" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="unidade_id">
+                    <div class="mb-3">
+                        <label class="form-label small text-uppercase">Nome da Unidade</label>
+                        <input type="text" class="form-control bg-dark text-light border-secondary" name="nome"
+                            id="unidade_nome" required placeholder="Ex: Filial Centro">
+                    </div>
+
+                    <!-- Endereço Separado -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <label class="form-label small text-uppercase">CEP</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control bg-dark text-light border-secondary mask-cep"
+                                    name="cep" id="unidade_cep">
+                                <button type="button" class="btn btn-outline-warning search-cep-btn"><i
+                                        class="fas fa-search"></i></button>
+                            </div>
+                        </div>
+                        <div class="col-8">
+                            <label class="form-label small text-uppercase">Logradouro</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" name="endereco"
+                                id="unidade_endereco" required>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label small text-uppercase">Nº</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" name="numero"
+                                id="unidade_numero">
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label small text-uppercase">Bairro</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" name="bairro"
+                                id="unidade_bairro">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small text-uppercase">Cidade/UF</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" name="cidade"
+                                id="unidade_cidade">
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small text-uppercase">Telefone</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" name="telefone"
+                                id="unidade_telefone">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-uppercase">WhatsApp</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" name="whatsapp"
+                                id="unidade_whatsapp">
+                        </div>
+                    </div>
+                    <div class="mb-3 mt-2">
+                        <label class="form-label small text-uppercase">Email</label>
+                        <input type="email" class="form-control bg-dark text-light border-secondary" name="email"
+                            id="unidade_email" placeholder="email@filial.com">
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small text-uppercase">Instagram</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" name="instagram"
+                                id="unidade_instagram">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-uppercase">Facebook</label>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" name="facebook"
+                                id="unidade_facebook">
+                        </div>
+                    </div>
+                </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-success">Salvar Unidade</button>
+        </div>
+        </form>
+    </div>
+</div>
+</div>
+
+<script>
+    function editUnidade(id, nome, endereco, telefone, whatsapp, instagram, facebook, email) {
+        document.getElementById('unidade_id').value = id;
+        document.getElementById('unidade_nome').value = nome;
+        document.getElementById('unidade_endereco').value = endereco;
+        document.getElementById('unidade_telefone').value = telefone || '';
+        document.getElementById('unidade_whatsapp').value = whatsapp || '';
+        document.getElementById('unidade_email').value = email || '';
+        document.getElementById('unidade_instagram').value = instagram || '';
+        document.getElementById('unidade_facebook').value = facebook || '';
+        new bootstrap.Modal(document.getElementById('modalUnidade')).show();
+    }
+</script>
+{% endblock %}
