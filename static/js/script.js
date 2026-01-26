@@ -1,9 +1,35 @@
 document.addEventListener('DOMContentLoaded', function () {
     initAIWidget();
-    initInactivityFeatures();
     initSoundSettings();
     playWelcomeMessage();
+    if (window.updateNavbarCartState) updateNavbarCartState(); // Initial check
+
+    // Listen for storage changes (cross-tab)
+    window.addEventListener('storage', function (e) {
+        if (e.key === 'vts_pizza_cart' && window.updateNavbarCartState) updateNavbarCartState();
+    });
 });
+
+window.updateNavbarCartState = function () {
+    const cartStr = localStorage.getItem('vts_pizza_cart');
+    const badge = document.getElementById('nav-cart-count');
+    if (!badge) return;
+
+    try {
+        const cart = JSON.parse(cartStr || '[]');
+        // Soma a quantidade total de itens no carrinho
+        const count = cart.reduce((acc, item) => acc + (item.qtd || 0), 0);
+
+        if (count > 0) {
+            badge.innerText = count;
+            badge.style.display = 'block';
+        } else {
+            badge.style.display = 'none';
+        }
+    } catch (e) {
+        badge.style.display = 'none';
+    }
+};
 
 function initAIWidget() {
     let widget = document.getElementById('ai-widget-container');

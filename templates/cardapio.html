@@ -39,29 +39,62 @@
     border: 1px solid var(--primary-color);
   }
 
-  /* Cart Floating Button */
+  /* Cart Floating Button (Redesign) */
   .fab-cart {
     position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background-color: var(--primary-color);
-    color: #212529;
-    width: 70px;
-    height: 70px;
+    bottom: 2rem;
+    right: 2rem;
+    background: linear-gradient(135deg, var(--primary-color), #ff9800);
+    color: #1a1a1a;
+    width: 65px;
+    height: 65px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    font-size: 28px;
+    box-shadow: 0 4px 20px rgba(255, 193, 7, 0.4);
+    font-size: 26px;
     cursor: pointer;
-    z-index: 1050;
-    border: none;
-    transition: transform 0.2s;
+    z-index: 9999;
+    /* Super High Z-Index */
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: fadeInUp 0.5s ease-out 1s backwards;
   }
 
   .fab-cart:hover {
-    transform: scale(1.1);
+    transform: scale(1.1) rotate(-5deg);
+    box-shadow: 0 8px 25px rgba(255, 193, 7, 0.6);
+  }
+
+  .cart-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    border: 2px solid #212529;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .cart-count {
@@ -166,12 +199,12 @@
                     {% if site_config.online_ordering_enabled and config.get(category, {}).get('show_price', True) %}
                     <button class="btn w-100 fw-bold rounded-pill"
                       style="background-color: var(--primary-color); color: #000;"
-                      @click="addToCart({id: {{ item.id }}, nome: '{{ item.nome|replace("'", "\\'") }}', priceStr: '{{ item.preco }}'})">
+                      @click="addToCart($event, {id: {{ item.id }}, nome: '{{ item.nome|replace("'", "\\'") }}', priceStr: '{{ item.preco }}'})">
                       <i class="fas fa-cart-plus me-2"></i> Adicionar
                     </button>
                     {% else %}
                     <!-- Whatsapp link fallback -->
-                    <a href="https://wa.me/{{ site_config.whatsapp }}" target="_blank"
+                    <a href=" https://wa.me/{{ site_config.whatsapp }}" target="_blank"
                       class="btn btn-outline-light w-100 rounded-pill btn-sm">
                       <i class="fab fa-whatsapp"></i> Consultar
                     </a>
@@ -207,9 +240,9 @@
     {% if site_config.online_ordering_enabled %}
     <div>
       <!-- Floating Button -->
-      <button class="fab-cart" @click="openCart" v-show="cart.length > 0">
+      <button class="fab-cart" @click="openCart" title="Abrir Carrinho">
         <i class="fas fa-shopping-basket"></i>
-        <span class="cart-count" v-text="cartCount"></span>
+        <span class="cart-count" v-text="cartCount" v-show="cartCount > 0"></span>
       </button>
 
       <!-- Offcanvas Checkout (Sliding Sidebar) -->
@@ -373,14 +406,35 @@
 {% endblock %}
 
 {% block scripts %}
-{% if site_config.online_ordering_enabled %}
-<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-<!-- Bootstrap Bundle already included in base_site, but Vue needs to be before script usage -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.min.js"></script>
+<!-- Bootstrap Bundle already included in base_site -->
 
 <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Hash activation logic (Robust)
+    const activateTabFromHash = () => {
+      var hash = window.location.hash;
+      if (hash && hash !== '#opencart') {
+        try {
+          var targetId = decodeURIComponent(hash.substring(1));
+          var tabBtn = document.getElementById(targetId + '-tab');
+          if (tabBtn) {
+            var tab = new bootstrap.Tab(tabBtn);
+            tab.show();
+            setTimeout(() => { tabBtn.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+          }
+        } catch (e) { console.warn("Hash nav error:", e); }
+      }
+    };
+    activateTabFromHash();
+    setTimeout(activateTabFromHash, 300);
+  });
+
   const { createApp } = Vue;
 
-  createApp({
+  let vueAppInstance = null;
+
+  vueAppInstance = createApp({
     delimiters: ['[[', ']]'],
     data() {
       return {
@@ -388,47 +442,41 @@
         submitting: false,
         modalInstance: null,
         form: {
-          nome: '',
-          telefone: '',
-          tipo_entrega: 'Entrega',
-          cep: '',
-          rua: '',
-          numero: '',
-          bairro: '',
-          complemento: '',
-          pagamento: 'maquina_cartao',
-          troco_para: '',
-          obs: ''
+          nome: '', telefone: '', tipo_entrega: 'Entrega', cep: '',
+          rua: '', numero: '', bairro: '', complemento: '',
+          pagamento: 'maquina_cartao', troco_para: '', obs: ''
         },
-        cepLoading: false,
-        couponCode: '',
-        discount: 0.0,
-        couponError: ''
+        cepLoading: false, couponCode: '', discount: 0.0, couponError: ''
       }
     },
     computed: {
-      cartCount() {
-        return this.cart.reduce((acc, item) => acc + item.qtd, 0);
-      },
-      total() {
-        return this.cart.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
-      }
+      cartCount() { return this.cart.reduce((acc, item) => acc + item.qtd, 0); },
+      total() { return this.cart.reduce((acc, item) => acc + (item.preco * item.qtd), 0); }
     },
     mounted() {
-      // Load cart from localStorage
       const saved = localStorage.getItem('vts_pizza_cart');
-      if (saved) {
-        try { this.cart = JSON.parse(saved); } catch (e) { }
+      if (saved) { try { this.cart = JSON.parse(saved); } catch (e) { } }
+
+      // SAFETY: Ensure openCartGlobal handles the sidebar even if Vue has issues
+      window.openCartGlobal = (e) => {
+        if (e) e.preventDefault();
+        this.openCart();
+      };
+
+      // Auto-open check
+      if (window.location.hash === '#opencart') {
+        setTimeout(() => { this.openCart(); }, 500);
+        history.replaceState(null, null, ' ');
       }
     },
     methods: {
       parsePrice(priceStr) {
         if (!priceStr) return 0;
-        // R$ 45,90 -> 45.90
         const clean = priceStr.toString().replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
         return parseFloat(clean) || 0;
       },
-      addToCart(product) {
+      addToCart(event, product) {
+        const wasEmpty = this.cart.length === 0;
         const existing = this.cart.find(i => i.id === product.id);
         if (existing) {
           existing.qtd++;
@@ -442,17 +490,22 @@
         }
         this.saveCart();
 
-        // Visual feedback
+        // Feedback Visual
         const btn = event.target.closest('button');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check"></i> Adicionado!';
-        btn.classList.remove('btn-warning');
-        btn.classList.add('btn-success');
-        setTimeout(() => {
-          btn.innerHTML = originalText;
-          btn.classList.add('btn-warning');
-          btn.classList.remove('btn-success');
-        }, 1500);
+        if (btn) {
+          const originalText = btn.innerHTML;
+          btn.innerHTML = '<i class="fas fa-check"></i> Adicionado!';
+          btn.classList.add('btn-success');
+          setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+          }, 1500);
+        }
+
+        // Abre o carrinho automaticamente apenas na primeira vez (se estava vazio)
+        if (wasEmpty) {
+          setTimeout(() => { this.openCart(); }, 400);
+        }
       },
       removeFromCart(index) {
         this.cart.splice(index, 1);
@@ -460,13 +513,37 @@
       },
       saveCart() {
         localStorage.setItem('vts_pizza_cart', JSON.stringify(this.cart));
+        if (window.updateNavbarCartState) window.updateNavbarCartState();
       },
       openCart() {
-        if (!this.modalInstance) {
+        try {
           const el = document.getElementById('cartOffcanvas');
-          if (el) this.modalInstance = new bootstrap.Offcanvas(el);
+          if (!el) {
+            console.error("Cart element not found!");
+            return;
+          }
+
+          // Try explicit window.bootstrap or global bootstrap
+          const bs = window.bootstrap || bootstrap;
+
+          if (!this.modalInstance) {
+            if (bs && bs.Offcanvas) {
+              this.modalInstance = new bs.Offcanvas(el);
+            } else {
+              console.error("Bootstrap Offcanvas not available");
+              // Fallback: simple class toggle
+              el.classList.add('show');
+              el.style.visibility = 'visible';
+              return;
+            }
+          }
+          this.modalInstance.show();
+        } catch (e) {
+          console.error("Error opening cart:", e);
+          // Emergency fallback
+          const el = document.getElementById('cartOffcanvas');
+          if (el) el.classList.add('show');
         }
-        if (this.modalInstance) this.modalInstance.show();
       },
       async submitOrder() {
         if (this.cart.length === 0) return;
@@ -585,5 +662,4 @@
     }
   });
 </script>
-{% endif %}
 {% endblock %}

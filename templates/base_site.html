@@ -147,6 +147,23 @@
                         <a class="nav-link {{ 'active' if request.path == '/' }}" href="/">Home</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('public.tracking') }}">Rastrear Pedido</a>
+                    </li>
+                    {% if site_config.online_ordering_enabled %}
+                    <li class="nav-item ms-lg-2" id="nav-cart-li">
+                        <a class="nav-link btn btn-outline-warning rounded-pill px-3 position-relative" href="#"
+                            id="navbar-cart-btn" onclick="event.preventDefault(); openCartGlobal(event)">
+                            <i class="fas fa-shopping-basket"></i> <span class="d-lg-none ms-2">Carrinho</span>
+                            <span
+                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                id="nav-cart-count" style="display:none; border: 2px solid #212529;">
+                                0
+                                <span class="visually-hidden">itens no carrinho</span>
+                            </span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.path == '/sobre' }}" href="/sobre">Sobre</a>
                     </li>
                     <li class="nav-item">
@@ -159,7 +176,7 @@
                         <a class="nav-link {{ 'active' if request.path == '/unidades' }}" href="/unidades">Unidades</a>
                     </li>
                     {% if site_config.online_ordering_enabled %}
-                    <li class="nav-item ms-lg-3">
+                    <li class="nav-item ms-lg-3" id="nav-pedir-agora-li">
                         <a href="/cardapio" class="btn btn-warning fw-bold rounded-pill px-4 text-dark">
                             <i class="fas fa-motorcycle"></i> Pedir Agora
                         </a>

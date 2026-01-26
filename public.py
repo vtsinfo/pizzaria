@@ -16,7 +16,11 @@ def ver_pedido(hash_id):
     except: pass
     
     return render_template('tracking.html', pedido=pedido, meta=meta)
-    
+
+@public_bp.route('/rastrear')
+def tracking():
+    return render_template('tracking.html', pedido=None)
+
 @public_bp.route('/')
 def home():
     banners = []
