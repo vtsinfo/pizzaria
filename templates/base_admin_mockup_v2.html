@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Mockup Admin Clean{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin_clean.css') }}" rel="stylesheet">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <div id="wrapper">
+        <!-- Sidebar Clean -->
+        <div id="sidebar-wrapper">
+            <div class="sidebar-heading">
+                <i class="fas fa-pizza-slice text-warning me-2"></i> Colonial
+            </div>
+
+            <div class="list-group list-group-flush flex-grow-1 overflow-auto custom-scrollbar">
+
+                <a href="#" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-chart-pie"></i> Visão Geral
+                </a>
+
+                <div class="sidebar-category">Operação</div>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-receipt"></i> Pedidos
+                    <span class="badge bg-warning text-dark rounded-pill ms-auto" style="font-size: 0.7em;">3</span>
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-calendar"></i> Reservas
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tv"></i> Monitor KDS
+                </a>
+
+                <div class="sidebar-category">Gestão</div>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-clipboard-list"></i> Cardápio
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-box"></i> Estoque
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-shopping-basket"></i> Compras
+                </a>
+
+                <div class="sidebar-category">Administração</div>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-users"></i> Equipe
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-cog"></i> Configurações
+                </a>
+            </div>
+
+            <div class="p-3 border-top">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="avatar bg-light border rounded-circle d-flex align-items-center justify-content-center"
+                        style="width: 40px; height: 40px;">
+                        <i class="fas fa-user text-muted"></i>
+                    </div>
+                    <div style="line-height: 1.2;">
+                        <span class="d-block fw-bold text-dark small">Admin</span>
+                        <small class="text-muted" style="font-size: 0.75rem;">Gerente</small>
+                    </div>
+                    <a href="#" class="ms-auto text-muted"><i class="fas fa-sign-out-alt"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <nav class="top-navbar">
+                <button class="btn btn-link text-main me-3" id="menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <h5 class="m-0 fw-bold">{% block header_title %}Visão Geral{% endblock %}</h5>
+
+                <div class="ms-auto d-flex align-items-center gap-3">
+                    <div class="search-bar d-none d-md-block position-relative">
+                        <i
+                            class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                        <input type="text" class="form-control ps-5 rounded-pill border-0 bg-light"
+                            placeholder="Pesquisar..." style="width: 200px;">
+                    </div>
+
+                    <button class="btn btn-light rounded-circle shadow-sm position-relative">
+                        <i class="far fa-bell"></i>
+                        <span
+                            class="position-absolute top-0 start-100 translate-middle p-1 bg-primary border border-light rounded-circle"></span>
+                    </button>
+                </div>
+            </nav>
+
+            <div class="container-fluid p-4">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById("menu-toggle").onclick = function (e) {
+            e.preventDefault();
+            document.getElementById("wrapper").classList.toggle("toggled");
+        };
+    </script>
+</body>
+
+</html>

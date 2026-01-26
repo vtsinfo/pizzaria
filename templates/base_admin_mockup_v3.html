@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Mockup Admin Corporate{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin_corporate.css') }}" rel="stylesheet">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <div id="wrapper">
+        <!-- Sidebar Corporate -->
+        <div id="sidebar-wrapper">
+            <div class="sidebar-heading">
+                PIZZARIA ERP
+            </div>
+
+            <div class="list-group list-group-flush flex-grow-1 overflow-auto custom-scrollbar">
+
+                <div class="sidebar-category">Principal</div>
+                <a href="#" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+
+                <div class="sidebar-category">Operacional</div>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-concierge-bell"></i> Pedidos
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-calendar-check"></i> Reservas
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tasks"></i> KDS
+                </a>
+
+                <div class="sidebar-category">Gerencial</div>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-utensils"></i> Produtos
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-warehouse"></i> Estoque
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-file-invoice-dollar"></i> Financeiro
+                </a>
+
+                <div class="sidebar-category">Sistema</div>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <i class="fas fa-cogs"></i> Configurações
+                </a>
+            </div>
+
+            <div class="p-3" style="background: rgba(0,0,0,0.1);">
+                <small class="d-block text-secondary mb-2">Versão 2.4.0</small>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <nav class="top-navbar bg-white shadow-sm">
+                <div class="d-flex align-items-center">
+                    <h5 class="m-0 text-dark fw-bold">{% block header_title %}Painel de Controle{% endblock %}</h5>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge bg-success">Sistema Online</span>
+
+                    <div class="dropdown">
+                        <a href="#"
+                            class="d-flex align-items-center text-decoration-none text-dark gap-2 dropdown-toggle"
+                            data-bs-toggle="dropdown">
+                            <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center"
+                                style="width: 32px; height: 32px;">A</div>
+                            <span class="fw-bold small">Administrador</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><a class="dropdown-item" href="#">Perfil</a></li>
+                            <li><a class="dropdown-item" href="#">Configurações</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item text-danger" href="#">Sair</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="container-fluid p-4">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

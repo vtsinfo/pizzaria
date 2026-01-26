@@ -1,5 +1,5 @@
 {
-    "nome_fantasia": "Pizzaria Colonial",
+    "nome_fantasia": "COLONIAL BURGUER E PIZZARIA ",
     "whatsapp": "",
     "telefone": "",
     "endereco_principal": "",
@@ -8,6 +8,7 @@
     "facebook": "",
     "inventory_enabled": true,
     "allow_negative_stock": true,
+    "online_ordering_enabled": true,
     "ai_enabled": true,
     "delivery_enabled": false,
     "reservations_enabled": false,
@@ -58,8 +59,9 @@
     "voice_gender": "female",
     "ai_name": "Andressa",
     "ai_voice_rate": 1.1,
-    "razao_social": "",
+    "razao_social": "COLONIAL BURGUER E PIZZARIA",
     "cnpj": "",
     "ie": "",
-    "email": ""
+    "email": "",
+    "admin_layout": "sidebar"
 }

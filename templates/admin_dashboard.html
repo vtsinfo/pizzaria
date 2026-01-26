@@ -13,6 +13,72 @@
 
 {% block content %}
 <div class="container">
+    {% if active_layout == 'launcher' %}
+    <!-- LAUNCHER MODE -->
+
+    <!-- Section: Operação -->
+    <div class="section-title">Operação Diária</div>
+    <div class="app-grid">
+        <a href="{{ url_for('admin.admin_pedidos') }}" class="app-card">
+            <i class="fas fa-receipt app-icon"></i>
+            <span class="app-label">Pedidos</span>
+            <!-- <span class="badge bg-danger rounded-pill mt-2">3 Ativos</span> -->
+        </a>
+        <a href="{{ url_for('admin.admin_reservas') }}" class="app-card">
+            <i class="fas fa-calendar-alt app-icon"></i>
+            <span class="app-label">Reservas</span>
+        </a>
+        <a href="{{ url_for('admin.monitor_cozinha') }}" class="app-card">
+            <i class="fas fa-tv app-icon"></i>
+            <span class="app-label">KDS Cozinha</span>
+        </a>
+    </div>
+
+    <!-- Section: Gestão -->
+    <div class="section-title">Gestão</div>
+    <div class="app-grid">
+        <a href="{{ url_for('admin.admin_painel') }}" class="app-card">
+            <i class="fas fa-utensils app-icon"></i>
+            <span class="app-label">Cardápio</span>
+        </a>
+        <a href="{{ url_for('admin.admin_estoque') }}" class="app-card">
+            <i class="fas fa-boxes app-icon"></i>
+            <span class="app-label">Estoque</span>
+        </a>
+        <a href="{{ url_for('admin.admin_compras') }}" class="app-card">
+            <i class="fas fa-shopping-cart app-icon"></i>
+            <span class="app-label">Compras</span>
+        </a>
+        <a href="{{ url_for('admin.admin_fornecedores') if 'admin.admin_fornecedores' in url_for.__globals__ else '#' }}"
+            class="app-card">
+            <i class="fas fa-truck app-icon"></i>
+            <span class="app-label">Fornecedores</span>
+        </a>
+    </div>
+
+    <!-- Section: Marketing & Admin -->
+    <div class="section-title">Marketing & Sistema</div>
+    <div class="app-grid">
+        <a href="{{ url_for('admin.admin_banners') }}" class="app-card">
+            <i class="fas fa-bullhorn app-icon"></i>
+            <span class="app-label">Marketing</span>
+        </a>
+        <a href="{{ url_for('admin.admin_cupons') }}" class="app-card">
+            <i class="fas fa-ticket-alt app-icon"></i>
+            <span class="app-label">Cupons</span>
+        </a>
+        <a href="{{ url_for('admin.admin_usuarios') }}" class="app-card">
+            <i class="fas fa-users-cog app-icon"></i>
+            <span class="app-label">Usuários</span>
+        </a>
+        <a href="{{ url_for('admin.admin_config') }}" class="app-card">
+            <i class="fas fa-cogs app-icon"></i>
+            <span class="app-label">Configuração</span>
+        </a>
+    </div>
+
+    {% else %}
+    <!-- STANDARD DASHBOARD (Charts) -->
     <div class="row">
         <!-- Gráfico de Barras (Pedidos por Dia) -->
         <div class="col-md-8 mb-4">
@@ -85,6 +151,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 
 <!-- Modal Minha Conta (Trocar Senha) -->

@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, session, current_app
 from models import Fidelidade, db, Pedido, ItemPedido, Produto, FichaTecnica, Ingrediente, Categoria
-from models import Fidelidade, db, Pedido, ItemPedido, Produto, FichaTecnica, Ingrediente, Categoria, Cupom
+from models import Fidelidade, db, Pedido, ItemPedido, Produto, FichaTecnica, Ingrediente, Categoria, Cupom, CupomUso
 import re
 import json
 import os
@@ -68,12 +68,39 @@ def novo_pedido():
                             if ing and ing.estoque_atual < 1:
                                 return jsonify({"success": False, "message": f"Estoque insuficiente: {prod.nome}"}), 400
 
+        # Lógica de Cupom (Server-Side Validation)
+        cupom_codigo = data.get('coupon')
+        desconto_val = 0.0
+        cupom_id = None
+        
+        if cupom_codigo:
+            cupom = Cupom.query.filter_by(codigo=cupom_codigo, ativo=True).first()
+            if cupom:
+                now = datetime.now()
+                valido = True
+                if cupom.validade_inicio and now < cupom.validade_inicio: valido = False
+                if cupom.validade_fim and now > cupom.validade_fim: valido = False
+                
+                if valido:
+                    cupom_id = cupom.id
+                    if cupom.tipo == 'porcentagem':
+                        desconto_val = (total_val * cupom.valor) / 100
+                    else:
+                        desconto_val = cupom.valor
+                    
+                    if desconto_val > total_val: desconto_val = total_val
+                    total_val -= desconto_val
+
         meta = {
             "taxa_entrega": parse_price(data.get('fee', '0')),
-            "coupon": data.get('coupon'),
+            "coupon": cupom_codigo,
+            "discount": desconto_val,
             "metodo_envio": data.get('method'),
             "obs": data.get('obs', '')
         }
+        
+        # Geração do Hash Seguro
+        order_hash = str(uuid.uuid4())
         
         pedido = Pedido(
             data_hora=datetime.now(),
@@ -81,11 +108,21 @@ def novo_pedido():
             cliente_telefone=data.get('phone'),
             cliente_endereco=data.get('address'),
             status='novo',
-            total=total_val,
-            metadata_json=json.dumps(meta)
+            total=total_val, 
+            metadata_json=json.dumps(meta),
+            hash_id=order_hash
         )
         db.session.add(pedido)
         db.session.flush()
+        
+        # Registra Uso do Cupom
+        if cupom_id and desconto_val > 0:
+            uso = CupomUso(
+                cupom_id=cupom_id,
+                pedido_id=pedido.id,
+                valor_desconto=desconto_val
+            )
+            db.session.add(uso)
         
         for item in data.get('items', []):
             prod = Produto.query.filter_by(nome=item.get('name')).first()
@@ -99,7 +136,11 @@ def novo_pedido():
             db.session.add(item_obj)
             
         db.session.commit()
-        return jsonify({"success": True, "order_id": pedido.id})
+        
+        # Link Público para Validação
+        order_link = url_for('public.ver_pedido', hash_id=pedido.hash_id, _external=True)
+        
+        return jsonify({"success": True, "order_id": pedido.id, "order_link": order_link})
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
@@ -173,6 +214,14 @@ def validar_cupom():
         cupom = Cupom.query.filter_by(codigo=codigo, ativo=True).first()
         
         if cupom:
+            now = datetime.now()
+            # Validação de Data
+            if cupom.validade_inicio and now < cupom.validade_inicio:
+                return jsonify({"valid": False, "message": "Cupom ainda não está válido."})
+            
+            if cupom.validade_fim and now > cupom.validade_fim:
+                return jsonify({"valid": False, "message": "Cupom expirado."})
+
             return jsonify({
                 "valid": True, 
                 "codigo": cupom.codigo, 

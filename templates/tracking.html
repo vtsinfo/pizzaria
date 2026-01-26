@@ -1,0 +1,96 @@
+{% extends "base_site.html" %}
+
+{% block title %}Pedido #{{ pedido.id }} - Comprovante{% endblock %}
+
+{% block content %}
+<div class="container py-5 mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg border-0" style="background-color: var(--card-bg);">
+                <div class="card-header bg-success text-white text-center py-4">
+                    <h1 class="h3 fw-bold mb-0"><i class="fas fa-check-circle me-2"></i>Pedido Recebido</h1>
+                    <p class="mb-0 opacity-75">Comprovante Oficial de Segurança</p>
+                </div>
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <small class="text-secondary text-uppercase ls-1">Código do Pedido</small>
+                        <h2 class="display-6 fw-bold text-primary">#{{ pedido.id }}</h2>
+                        <span class="badge bg-{{ 'warning' if pedido.status == 'novo' else 'info' }} rounded-pill px-3">
+                            {{ pedido.status|upper }}
+                        </span>
+                    </div>
+
+                    <div class="border-top border-bottom py-3 my-4">
+                        <div class="row">
+                            <div class="col-6 mb-2">
+                                <small class="text-secondary d-block">Cliente</small>
+                                <strong>{{ pedido.cliente_nome }}</strong>
+                            </div>
+                            <div class="col-6 mb-2 text-end">
+                                <small class="text-secondary d-block">Data</small>
+                                <strong>{{ pedido.data_hora.strftime('%d/%m/%Y %H:%M') }}</strong>
+                            </div>
+                            <div class="col-12 mt-2">
+                                <small class="text-secondary d-block">Endereço</small>
+                                <span>{{ pedido.cliente_endereco }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning border-warning d-flex align-items-center" role="alert">
+                        <i class="fas fa-exclamation-triangle fs-4 me-3"></i>
+                        <div>
+                            <strong>Verifique os valores!</strong><br>
+                            Se houve alguma alteração no pedido, o valor correto e final é este apresentado abaixo.
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3"><i class="fas fa-receipt me-2"></i>Itens do Pedido</h5>
+                    <ul class="list-group list-group-flush mb-4 bg-transparent">
+                        {% for item in pedido.itens %}
+                        <li
+                            class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <span class="fw-bold">{{ item.quantidade }}x</span> {{ item.produto_nome }}
+                            </div>
+                            <span>R$ {{ item.preco_unitario }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+
+                    <div class="card bg-dark text-white p-3 rounded" style="background-color: #212529 !important;">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal + Taxas</span>
+                            <span>Calculando...</span>
+                        </div>
+                        {% if meta.discount and meta.discount > 0 %}
+                        <div class="d-flex justify-content-between mb-2 text-success">
+                            <span>Desconto (Cupom)</span>
+                            <span>- R$ {{ "%.2f"|format(meta.discount) }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="d-flex justify-content-between fs-4 fw-bold border-top border-secondary pt-2 mt-2">
+                            <span>TOTAL REAL</span>
+                            <span class="text-warning">R$ {{ "%.2f"|format(pedido.total) }}</span>
+                        </div>
+                        <div class="mt-3 small text-center text-muted">
+                            Pagamento: {{ pedido.metodo_pagamento }}
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-4 text-center small">
+                        <i class="fas fa-shield-alt me-1"></i> Este é o comprovante original armazenado no servidor da
+                        {{ site_config.nome_fantasia }}.
+                        Se os dados aqui forem diferentes do WhatsApp, considere este como verdadeiro.
+                    </div>
+
+                </div>
+                <div class="card-footer text-center bg-transparent py-3">
+                    <a href="{{ url_for('public.cardapio') }}" class="btn btn-outline-primary rounded-pill">Fazer Novo
+                        Pedido Link</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

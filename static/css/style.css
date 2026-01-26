@@ -45,15 +45,15 @@
     border-radius: 50%;
     background-color: var(--primary-color);
     color: #212529;
-    border: none;
-    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.5);
+    border: 2px solid #fff;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
     cursor: pointer;
     font-size: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.3s;
-    z-index: 1002;
+    z-index: 9999;
     animation: pulse-glow 2s infinite;
 }
 

@@ -9,8 +9,13 @@
     <style>
         body {
             background-color: #212529;
-            color: #fff;
+            color: #fff !important;
             font-family: sans-serif;
+        }
+
+        .text-muted {
+            color: #adb5bd !important;
+            /* Lighter gray for dark mode */
         }
 
         .card-pedido {
@@ -37,6 +42,8 @@
             font-size: 1.1rem;
             border-bottom: 1px solid #495057;
             padding: 8px 0;
+            color: #ecf0f1;
+            /* High contrast text */
         }
 
         .item-lista:last-child {
@@ -73,7 +80,10 @@
         <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3 border-secondary">
             <h1 class="h2">🧑‍🍳 Monitor de Cozinha</h1>
             <div class="d-flex align-items-center gap-3">
-                <span id="last-updated" class="text-muted small">Atualizado: --:--:--</span>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-arrow-left"></i> Voltar
+                </a>
+                <span id="last-updated" class="text-white small">Atualizado: --:--:--</span>
                 <button id="btn-enable-sound" class="btn btn-outline-warning btn-sm">
                     🔇 Ativar Som
                 </button>
@@ -168,7 +178,7 @@
                     <div class="col-md-6 col-lg-4 col-xl-3">
                         <div class="card card-pedido">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <span>#${order.id} <small class="fw-normal text-muted">${order.customer.split(' ')[0]}</small></span>
+                                <span>#${order.id} <small class="fw-normal text-white-50">${order.customer.split(' ')[0]}</small></span>
                                 <span class="badge bg-dark border border-secondary badge-timer">🕒 ${timeStr}</span>
                             </div>
                             <div class="card-body">

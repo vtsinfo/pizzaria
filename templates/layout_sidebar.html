@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Mockup Admin Moderno{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin_modern.css') }}" rel="stylesheet">
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <div id="wrapper">
+        <!-- Sidebar Moderna -->
+        <div id="sidebar-wrapper">
+            <div class="sidebar-heading">
+                <i class="fas fa-pizza-slice text-warning"></i> Colonial
+            </div>
+
+
+            <div class="list-group list-group-flush flex-grow-1 overflow-auto custom-scrollbar">
+
+                <a href="{{ url_for('admin_dashboard') }}"
+                    class="list-group-item list-group-item-action {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                    <i class="fas fa-home"></i> Visão Geral
+                </a>
+
+                <!-- Grupo 1: Operação -->
+                <div class="sidebar-category">Operação</div>
+                <a href="{{ url_for('admin.admin_pedidos') }}"
+                    class="list-group-item list-group-item-action {% if 'pedidos' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-receipt"></i> Pedidos
+                    <!-- <span class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.7em;">3</span> -->
+                </a>
+                <a href="{{ url_for('admin.admin_reservas') }}"
+                    class="list-group-item list-group-item-action {% if 'reservas' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-calendar-alt"></i> Reservas
+                </a>
+                <a href="{{ url_for('admin.monitor_cozinha') }}"
+                    class="list-group-item list-group-item-action {% if 'cozinha' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-tv"></i> Monitor KDS
+                </a>
+
+                <!-- Grupo 2: Gestão -->
+                <div class="sidebar-category">Gestão</div>
+                <a href="{{ url_for('admin.admin_painel') }}"
+                    class="list-group-item list-group-item-action {% if 'cardapio' in request.endpoint or 'ingredien' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-utensils"></i> Cardápio
+                </a>
+                <a href="{{ url_for('admin.admin_estoque') }}"
+                    class="list-group-item list-group-item-action {% if 'estoque' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-boxes"></i> Estoque
+                </a>
+                <a href="{{ url_for('admin.admin_compras') }}"
+                    class="list-group-item list-group-item-action {% if 'compras' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-shopping-cart"></i> Compras
+                </a>
+                <a href="{{ url_for('admin.admin_config') }}"
+                    class="list-group-item list-group-item-action {% if 'config' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-cogs"></i> Configurações
+                </a>
+
+                <!-- Grupo 3: Marketing -->
+                <div class="sidebar-category">Marketing</div>
+                <a href="{{ url_for('admin.admin_banners') }}"
+                    class="list-group-item list-group-item-action {% if 'banner' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-images"></i> Banners
+                </a>
+                <a href="{{ url_for('admin.admin_cupons') }}"
+                    class="list-group-item list-group-item-action {% if 'cupon' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-ticket-alt"></i> Cupons
+                </a>
+                <a href="{{ url_for('admin.admin_promocoes') }}"
+                    class="list-group-item list-group-item-action {% if 'promocoe' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-clock"></i> Promoções
+                </a>
+
+                <!-- Grupo 4: Sistema -->
+                <div class="sidebar-category">Sistema</div>
+                <a href="{{ url_for('admin.admin_usuarios') }}"
+                    class="list-group-item list-group-item-action {% if 'usuario' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-users-cog"></i> Usuários
+                </a>
+                <a href="{{ url_for('admin_motoboys') }}"
+                    class="list-group-item list-group-item-action {% if 'motoboy' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-motorcycle"></i> Motoboys
+                </a>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <small class="text-muted d-block">Logado como</small>
+                        <strong>{{ session.get('username', 'Admin') }}</strong>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <nav class="top-navbar">
+                <button class="btn btn-link text-light me-3" id="menu-toggle">
+                    <i class="fas fa-bars fa-lg"></i>
+                </button>
+
+                <h5 class="m-0 text-light fw-normal">{% block header_title %}Dashboard{% endblock %}</h5>
+
+                <div class="ms-auto d-flex align-items-center gap-3">
+                    <div class="search-bar d-none d-md-block">
+                        <input type="text" placeholder="Buscar pedidos, clientes...">
+                    </div>
+
+                    <button class="btn btn-link text-light position-relative">
+                        <i class="fas fa-bell"></i>
+                        <span
+                            class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                    </button>
+                </div>
+            </nav>
+
+            <div class="container-fluid p-4">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById("menu-toggle").onclick = function (e) {
+            e.preventDefault();
+            document.getElementById("wrapper").classList.toggle("toggled");
+        };
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

@@ -483,6 +483,93 @@ def admin_reservas():
 def admin_cupons():
     return render_template('admin_cupons.html', title='Cupons de Desconto')
 
+@admin_bp.route('/api/cupons', methods=['GET'])
+@login_required
+def api_admin_list_cupons():
+    cupons = Cupom.query.all()
+    # Retorna formato compatível com o frontend, agora como LISTA
+    dados = []
+    for c in cupons:
+        dados.append({
+            "code": c.codigo,
+            "valor": c.valor,
+            "tipo": c.tipo,
+            "desc": c.descricao,
+            "inicio": c.validade_inicio.strftime('%Y-%m-%dT%H:%M') if c.validade_inicio else "",
+            "fim": c.validade_fim.strftime('%Y-%m-%dT%H:%M') if c.validade_fim else ""
+        })
+    return jsonify(dados)
+
+@admin_bp.route('/api/cupons/historico', methods=['GET'])
+@login_required
+def api_admin_historico_cupons():
+    usos = CupomUso.query.order_by(CupomUso.data_uso.desc()).limit(50).all()
+    dados = []
+    for u in usos:
+        dados.append({
+            "id": u.id,
+            "cupom": u.cupom.codigo,
+            "pedido": u.pedido_id,
+            "valor": u.valor_desconto,
+            "data": u.data_uso.strftime('%d/%m/%Y %H:%M')
+        })
+    return jsonify(dados)
+
+@admin_bp.route('/api/cupons/save', methods=['POST'])
+@login_required
+def api_admin_save_cupons():
+    try:
+        data = request.get_json()
+        # O frontend enviará um objeto único para salvar/criar OU uma lista?
+        # Vamos manter o padrão REST: POST cria, PUT atualiza, DELETE deleta.
+        # Mas para facilitar a migração do código anterior (que salvava TUDO), vamos aceitar uma LISTA e sincronizar.
+        
+        # Estratégia Sincronização:
+        # 1. Recebe lista de códigos atuais
+        # 2. Atualiza/Cria quem estiver na lista
+        # 3. Remove quem NÃO estiver na lista (opcional, ou manter histórico)
+        # DECISÃO: O frontend enviará AÇÃO (create, delete) é melhor.
+        # Mas o código anterior enviava o objeto INTEIRO 'coupons'.
+        # Vamos reescrever o frontend para chamar endpoints específicos é mais limpo, MAS 
+        # para ser rápido, vamos adaptar o backend para receber a ação específica se possível, ou processar o JSON.
+        
+        # Vamos fazer um endpoint HÍBRIDO para o frontend atualizado:
+        # Espera um JSON com { action: 'save' | 'delete', data: ... }
+        
+        action = data.get('action')
+        item = data.get('data')
+        
+        if action == 'delete':
+            Cupom.query.filter_by(codigo=item.get('code')).delete()
+            db.session.commit()
+            return jsonify({"success": True})
+            
+        elif action == 'save':
+            code = item.get('code').upper().strip()
+            c = Cupom.query.filter_by(codigo=code).first()
+            if not c:
+                c = Cupom(codigo=code)
+                db.session.add(c)
+            
+            c.tipo = item.get('tipo', 'porcentagem')
+            c.valor = float(item.get('valor', 0))
+            c.descricao = item.get('desc', '')
+            
+            # Datas
+            inicio = item.get('inicio')
+            fim = item.get('fim')
+            
+            c.validade_inicio = datetime.strptime(inicio, '%Y-%m-%dT%H:%M') if inicio else None
+            c.validade_fim = datetime.strptime(fim, '%Y-%m-%dT%H:%M') if fim else None
+            
+            db.session.commit()
+            return jsonify({"success": True})
+            
+        return jsonify({"success": False, "message": "Ação inválida"}), 400
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
 @admin_bp.route('/promocoes')
 @login_required
 def admin_promocoes():
@@ -599,7 +686,9 @@ def admin_config():
             config['whatsapp'] = request.form.get('whatsapp', '')
             config['endereco_principal'] = request.form.get('endereco_principal', '')
             config['tipo_forno'] = request.form.get('tipo_forno', '')
+
             config['cor_primaria'] = request.form.get('cor_primaria', '#ffc107')
+            config['admin_layout'] = request.form.get('admin_layout', 'sidebar') # Layout Selector
             config['sobre_nos'] = request.form.get('sobre_nos', '')
             
             config['self_service_enabled'] = 'self_service_enabled' in request.form

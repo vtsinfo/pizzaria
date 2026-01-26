@@ -14,7 +14,7 @@ function initAIWidget() {
         widget.id = 'ai-widget-container';
         widget.innerHTML = `
             <button id="ai-toggle-btn" class="ai-toggle-btn" aria-label="Abrir Assistente">
-                <span style="font-size: 28px;">🤖</span>
+                <span style="font-size: 30px; line-height: 1;">🍕</span>
             </button>
             <div class="ai-notification-badge" style="display: none;"></div>
             <div class="ai-chat-window">
@@ -485,6 +485,11 @@ function initAIWidget() {
                 addMessage(`❌ <strong>Erro no Pedido:</strong> ${resData.message}`, 'bot');
                 return;
             }
+
+            // SEGURANÇA: Adiciona Link Oficial de Validação
+            const secureLink = resData.order_link;
+            msg += `\n\n🔐 *Comprovante Digital (Segurança):*\n${secureLink}`;
+
         } catch (err) {
             console.error("Erro ao enviar pedido", err);
             addMessage("❌ Erro de conexão ao registrar pedido. Tente novamente.", 'bot');
@@ -1178,6 +1183,10 @@ function initAIWidget() {
                 } catch (e) { }
             }
 
+            // Injeção de Variáveis Dinâmicas
+            const siteName = (window.siteConfig && window.siteConfig.nome_fantasia) || "Pizzaria";
+            response = response.replace(/{SITE_NAME}/g, siteName);
+
             addMessage(response, 'bot');
         }, 800);
     }
@@ -1194,118 +1203,9 @@ function initAIWidget() {
     });
 }
 
+// Função de inatividade removida a pedido do usuário
 function initInactivityFeatures() {
-    const idleLimit = 15000; // 15 segundos de inatividade para ativar
-    let idleTimer;
-    let alternationInterval;
-    const aiBtn = document.getElementById('ai-toggle-btn');
-    const waBtn = document.getElementById('whatsapp-floating');
-    const aiContainer = document.getElementById('ai-widget-container');
-
-    // Injeta o Tooltip do WhatsApp se não existir
-    let waBubble = document.getElementById('whatsapp-cta-bubble');
-    if (waBtn && !waBubble) {
-        waBubble = document.createElement('span');
-        waBubble.id = 'whatsapp-cta-bubble';
-        waBubble.textContent = 'Peça pelo Zap';
-        waBtn.appendChild(waBubble);
-    }
-
-    // Injeta o Tooltip da IA se não existir
-    let aiBubble = document.getElementById('ai-cta-bubble');
-    if (aiContainer && !aiBubble) {
-        aiBubble = document.createElement('div');
-        aiBubble.id = 'ai-cta-bubble';
-        aiBubble.textContent = 'Fale com a Atendente';
-        aiContainer.appendChild(aiBubble);
-    } else if (aiBubble) {
-        aiBubble.textContent = 'Fale com a Atendente';
-    }
-
-    function playAttentionSound() {
-        // Verifica se a aba está visível (não toca se estiver minimizada/oculta)
-        if (document.hidden) return;
-
-        // Verifica se o som está desativado pelo usuário
-        if (localStorage.getItem('site_sound_muted') === 'true') return;
-
-        // Som de "Assobio" (Slide de frequência)
-        try {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return;
-
-            const ctx = new AudioContext();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-
-            const now = ctx.currentTime;
-            osc.type = 'sine'; // Onda senoidal pura
-            osc.frequency.setValueAtTime(900, now); // Começa em 900Hz
-            osc.frequency.exponentialRampToValueAtTime(2200, now + 0.2); // Sobe rápido para 2200Hz (Efeito Assobio)
-
-            gain.gain.setValueAtTime(0.05, now); // Volume baixo
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3); // Fade out
-
-            osc.start(now);
-            osc.stop(now + 0.3);
-        } catch (e) {
-            console.warn("Erro ao tocar som:", e);
-        }
-    }
-
-    function showAttention() {
-        if (aiBtn) aiBtn.classList.add('attention-seeker');
-        if (waBtn) waBtn.classList.add('attention-seeker');
-
-        playAttentionSound();
-
-        // Lógica de alternância dos tooltips
-        let showAi = true;
-        const flashTooltip = () => {
-            // Garante que ambos comecem ocultos
-            if (aiBubble) aiBubble.classList.remove('tooltip-visible');
-            if (waBubble) waBubble.classList.remove('tooltip-visible');
-
-            // Escolhe qual mostrar
-            const target = showAi ? aiBubble : waBubble;
-            if (target) {
-                target.classList.add('tooltip-visible');
-                // Esconde após 10 segundos
-                setTimeout(() => {
-                    target.classList.remove('tooltip-visible');
-                }, 10000);
-            }
-            showAi = !showAi;
-        };
-
-        flashTooltip(); // Mostra o primeiro imediatamente
-        alternationInterval = setInterval(flashTooltip, 120000); // Alterna a cada 2 minutos
-    }
-
-    function resetAttention() {
-        if (aiBtn) aiBtn.classList.remove('attention-seeker');
-        if (waBtn) waBtn.classList.remove('attention-seeker');
-
-        // Remove visibilidade forçada
-        if (aiBubble) aiBubble.classList.remove('tooltip-visible');
-        if (waBubble) waBubble.classList.remove('tooltip-visible');
-
-        clearInterval(alternationInterval);
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(showAttention, idleLimit);
-    }
-
-    // Eventos que resetam o timer (interação do usuário)
-    const events = ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'];
-    events.forEach(evt => {
-        document.addEventListener(evt, resetAttention, { passive: true });
-    });
-
-    // Inicia o timer
-    resetAttention();
+    // Desativado
 }
 
 function initSoundSettings() {
@@ -1405,7 +1305,8 @@ function speakWelcome() {
 
         if (selectedVoice) utterance.voice = selectedVoice;
 
-        const text = `Olá! Bem-vindo à Pizzaria Colonial. Eu sou ${assistantName === 'Val' ? 'a Val' : 'o Diovani'}, seu assistente virtual.`;
+        const siteName = (window.siteConfig && window.siteConfig.nome_fantasia) || "Pizzaria";
+        const text = `Olá! Bem-vindo à ${siteName}. Eu sou ${assistantName === 'Val' ? 'a Val' : 'o Diovani'}, seu assistente virtual.`;
         utterance.text = text;
 
         window.speechSynthesis.speak(utterance);

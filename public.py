@@ -1,13 +1,24 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
-from models import Banner, Categoria, Produto
+from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app
+from models import Banner, Categoria, Produto, Depoimento, Pedido, ItemPedido
 from datetime import datetime
 import json
 import os
 
 public_bp = Blueprint('public', __name__)
 
+@public_bp.route('/p/<hash_id>')
+def ver_pedido(hash_id):
+    pedido = Pedido.query.filter_by(hash_id=hash_id).first_or_404()
+    
+    # Parser do metadata
+    meta = {}
+    try: meta = json.loads(pedido.metadata_json) if pedido.metadata_json else {}
+    except: pass
+    
+    return render_template('tracking.html', pedido=pedido, meta=meta)
+    
 @public_bp.route('/')
-def index():
+def home():
     banners = []
     try:
         banners_db = Banner.query.filter_by(ativo=True).order_by(Banner.ordem).all()

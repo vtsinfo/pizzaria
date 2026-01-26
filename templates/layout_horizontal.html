@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup Horizontal - Pizzaria Colonial</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin_modern.css') }}" rel="stylesheet">
+    <style>
+        body {
+            background-color: #121212;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Horizontal Top Bar -->
+    <nav class="navbar navbar-expand-lg nav-horizontal fixed-top">
+        <div class="container-fluid">
+            <!-- Brand -->
+            <a class="navbar-brand fw-bold text-warning me-4" href="#">
+                <i class="fas fa-pizza-slice"></i> Colonial
+            </a>
+
+            <!-- Toggler -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#horizNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Links -->
+            <div class="collapse navbar-collapse" id="horizNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}"
+                            href="{{ url_for('admin_dashboard') }}"><i class="fas fa-home me-1"></i> Dashboard</a>
+                    </li>
+
+                    <!-- Dropdown: Operação -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="fas fa-tasks me-1"></i> Operação
+                        </a>
+                        <ul class="dropdown-menu mega-menu dropdown-menu-dark">
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin.admin_pedidos') }}"><i
+                                        class="fas fa-receipt w-25px"></i> Pedidos Ativos</a></li>
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin.admin_reservas') }}"><i
+                                        class="fas fa-calendar-alt w-25px"></i> Reservas de Mesa</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item py-2 text-warning"
+                                    href="{{ url_for('admin.monitor_cozinha') }}"><i class="fas fa-tv w-25px"></i> Tela
+                                    Cozinha (KDS)</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Dropdown: Gestão -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="fas fa-box-open me-1"></i> Gestão
+                        </a>
+                        <ul class="dropdown-menu mega-menu dropdown-menu-dark">
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin.admin_painel') }}"><i
+                                        class="fas fa-utensils w-25px"></i> Cardápio e Produtos</a></li>
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin.admin_estoque') }}"><i
+                                        class="fas fa-boxes w-25px"></i> Estoque de Ingredientes</a></li>
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin.admin_compras') }}"><i
+                                        class="fas fa-shopping-cart w-25px"></i> Compras e Entrada</a></li>
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin.admin_config') }}"><i
+                                        class="fas fa-truck w-25px"></i> Fornecedores (Config)</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Dropdown: Marketing -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="fas fa-bullhorn me-1"></i> Marketing
+                        </a>
+                        <ul class="dropdown-menu mega-menu dropdown-menu-dark">
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin.admin_banners') }}"><i
+                                        class="fas fa-images w-25px"></i> Banners do Site</a></li>
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin.admin_cupons') }}"><i
+                                        class="fas fa-ticket-alt w-25px"></i> Cupons de Desconto</a></li>
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin.admin_promocoes') }}"><i
+                                        class="fas fa-clock w-25px"></i> Promoções Agendadas</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Dropdown: Sistema -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="fas fa-cogs me-1"></i> Sistema
+                        </a>
+                        <ul class="dropdown-menu mega-menu dropdown-menu-dark">
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin.admin_config') }}"><i
+                                        class="fas fa-sliders-h w-25px"></i> Configurações Gerais</a></li>
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin.admin_usuarios') }}"><i
+                                        class="fas fa-users-cog w-25px"></i> Usuários e Permissões</a></li>
+                            <li><a class="dropdown-item py-2" href="{{ url_for('admin_motoboys') }}"><i
+                                        class="fas fa-motorcycle w-25px"></i> Motoboys</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item py-2 text-danger" href="{{ url_for('logout') }}"><i
+                                        class="fas fa-sign-out-alt w-25px"></i> Sair</a></li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <!-- Right Elements -->
+                <div class="d-flex align-items-center gap-3">
+                    <div class="input-group input-group-sm d-none d-lg-flex" style="width: 200px;">
+                        <span class="input-group-text bg-transparent border-secondary text-muted"><i
+                                class="fas fa-search"></i></span>
+                        <input type="text" class="form-control bg-transparent border-secondary text-light"
+                            placeholder="Buscar...">
+                    </div>
+
+                    <div class="vr bg-secondary mx-1 h-50"></div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="text-end lh-1 d-none d-lg-block">
+                            <span class="d-block fw-bold small">Admin</span>
+                        </div>
+                        <img src="https://ui-avatars.com/api/?name=Admin&background=ffc107&color=000"
+                            class="rounded-circle" width="32" height="32">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content (Full Width) -->
+    <div style="padding-top: 80px;" class="container-fluid px-4 pb-4">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

@@ -129,6 +129,30 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 # Rota de Login
+
+# --- Context Processors ---
+@app.context_processor
+def inject_layout():
+    if not session.get('logged_in'):
+        return {}
+    
+    # Carrega config para saber o layout
+    config = {}
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+        except: pass
+    
+    layout_mode = config.get('admin_layout', 'sidebar')
+    layout_map = {
+        'sidebar': 'layout_sidebar.html',
+        'horizontal': 'layout_horizontal.html',
+        'launcher': 'layout_launcher.html'
+    }
+    
+    return dict(layout_template=layout_map.get(layout_mode, 'layout_sidebar.html'), active_layout=layout_mode)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -1213,6 +1237,26 @@ def concluir_pedido():
         log_activity(f"Concluiu pedido #{pedido.id}")
         return jsonify({"success": True})
     return jsonify({"success": False}, 404)
+
+
+# --- Rota de Mockup (Temporária para validação de UI) ---
+@app.route('/admin/mockup')
+def admin_mockup(): # Layout 1: Sidebar
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('mockup_dashboard.html')
+
+@app.route('/admin/mockup/horizontal') 
+def admin_mockup_horizontal(): # Layout 2: Mega Menu
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('mockup_dashboard_horizontal.html')
+
+@app.route('/admin/mockup/launcher')
+def admin_mockup_launcher(): # Layout 3: Grid/App based
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('mockup_dashboard_launcher.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

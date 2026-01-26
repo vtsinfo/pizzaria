@@ -17,8 +17,8 @@
         "vegetariana|vegano|sem carne": "Temos opções vegetarianas deliciosas, como Brócolis, Quatro Queijos, Marguerita e Palmito. Para veganos, podemos fazer sem queijo se preferir!",
         "bebida|refri|coca|cerveja": "Temos Coca-Cola, Guaraná, Sucos Del Valle e Cervejas (Long Neck e Lata). Vai uma gelada?",
         "oi|olá|bom dia|boa tarde|boa noite": [
-            "Olá! Bem-vindo à Pizzaria Colonial. Eu sou a assistente virtual. Deu fome aí? 🍕",
-            "Oi! Sou a IA da Colonial. Posso te ajudar com cardápio, reservas ou delivery?",
+            "Olá! Bem-vindo à {SITE_NAME}. Eu sou a assistente virtual. Deu fome aí? 🍕",
+            "Oi! Sou a IA da {SITE_NAME}. Posso te ajudar com cardápio, reservas ou delivery?",
             "E aí! Tudo bem? Vai uma pizza hoje? Como posso ajudar?"
         ],
         "obrigado|valeu|agradeço": [
@@ -26,7 +26,7 @@
             "De nada! Se bater a fome, é só chamar.",
             "Disponha! Bom apetite!"
         ],
-        "quem é você|ia|robô": "Sou a assistente virtual da Pizzaria Colonial! Estou aqui para anotar seu pedido, tirar dúvidas e te ajudar a comer bem. 😄",
+        "quem é você|ia|robô": "Sou a assistente virtual da {SITE_NAME}! Estou aqui para anotar seu pedido, tirar dúvidas e te ajudar a comer bem. 😄",
         "demora|tempo|espera": "Nosso tempo médio de entrega é de 40 a 50 minutos. No salão, o rodízio é imediato! 🚀"
     },
     "fallback": "Desculpe, ainda estou aprendendo sobre pizzas! 😅 Posso ajudar com Cardápio, Horários, Endereços ou Reservas. O que você precisa?"

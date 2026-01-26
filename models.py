@@ -89,6 +89,9 @@ class Pedido(db.Model):
     cliente_telefone = db.Column(db.String(20))
     cliente_endereco = db.Column(db.Text)
     
+    # Segurança
+    hash_id = db.Column(db.String(36), unique=True, index=True) # UUID ou Hash único para link público
+    
     status = db.Column(db.String(20), default='novo') # novo, preparo, entrega, concluido, cancelado
     metodo_pagamento = db.Column(db.String(50))
     total = db.Column(db.Float, default=0.0)
@@ -145,7 +148,21 @@ class Cupom(db.Model):
     tipo = db.Column(db.String(20), nullable=False) # 'porcentagem' ou 'fixo'
     valor = db.Column(db.Float, nullable=False)
     descricao = db.Column(db.String(200))
+    validade_inicio = db.Column(db.DateTime, nullable=True)
+    validade_fim = db.Column(db.DateTime, nullable=True)
     ativo = db.Column(db.Boolean, default=True)
+
+class CupomUso(db.Model):
+    __tablename__ = 'cupons_uso'
+    id = db.Column(db.Integer, primary_key=True)
+    cupom_id = db.Column(db.Integer, db.ForeignKey('cupons.id'), nullable=False)
+    pedido_id = db.Column(db.Integer, db.ForeignKey('pedidos.id'), nullable=False)
+    valor_desconto = db.Column(db.Float, nullable=False)
+    data_uso = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relacionamentos
+    cupom = db.relationship('Cupom', backref='usos')
+    pedido = db.relationship('Pedido', backref='cupom_uso')
 
 class Banner(db.Model):
     __tablename__ = 'banners'

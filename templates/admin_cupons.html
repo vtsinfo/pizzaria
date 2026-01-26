@@ -16,6 +16,7 @@
                     <h5 class="mb-0 text-primary">Novo Cupom</h5>
                 </div>
                 <div class="card-body">
+
                     <form id="addCouponForm">
                         <div class="mb-3">
                             <label class="form-label text-muted small">Código (Ex: PIZZA10)</label>
@@ -33,18 +34,37 @@
                             <input type="number" class="form-control" id="value" step="0.01" required>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label text-muted small">Validade (Opcional)</label>
+                            <div class="d-flex gap-2">
+                                <div class="w-50">
+                                    <small class="d-block text-secondary">Início</small>
+                                    <input type="datetime-local" class="form-control form-control-sm" id="dateStart">
+                                </div>
+                                <div class="w-50">
+                                    <small class="d-block text-secondary">Fim</small>
+                                    <input type="datetime-local" class="form-control form-control-sm" id="dateEnd">
+                                </div>
+                            </div>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="permanent" checked
+                                    onchange="toggleDates()">
+                                <label class="form-check-label small" for="permanent">Cupom Permanente (Sem
+                                    validade)</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label text-muted small">Descrição</label>
                             <input type="text" class="form-control" id="desc" placeholder="Ex: 10% de desconto">
                         </div>
-                        <button type="submit" class="btn btn-primary w-100 shadow-sm">Adicionar Cupom</button>
+                        <button type="submit" class="btn btn-primary w-100 shadow-sm">Salvar Cupom</button>
                     </form>
                 </div>
             </div>
         </div>
 
-        <!-- Lista de Cupons -->
+        <!-- Lista Cupons -->
         <div class="col-md-8">
-            <div class="card shadow-sm border-0">
+            <div class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-white border-bottom">
                     <h5 class="mb-0 text-primary">Cupons Ativos</h5>
                 </div>
@@ -55,12 +75,37 @@
                                 <tr>
                                     <th class="ps-4">Código</th>
                                     <th>Desconto</th>
+                                    <th>Validade</th>
                                     <th>Descrição</th>
                                     <th class="text-end pe-4">Ação</th>
                                 </tr>
                             </thead>
-                            <tbody id="couponsTable">
-                                <!-- Preenchido via JS -->
+                            <tbody id="couponsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Histórico de Uso -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0 text-secondary"><i class="fas fa-history"></i> Últimos Usos</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Data</th>
+                                    <th>Cupom</th>
+                                    <th>Pedido</th>
+                                    <th>Desconto Dado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTable">
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">Carregando...</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -71,32 +116,83 @@
 </div>
 
 <script>
-    let coupons = {};
+    let couponsList = [];
+
+    function toggleDates() {
+        const isPerm = document.getElementById('permanent').checked;
+        document.getElementById('dateStart').disabled = isPerm;
+        document.getElementById('dateEnd').disabled = isPerm;
+        if (isPerm) {
+            document.getElementById('dateStart').value = '';
+            document.getElementById('dateEnd').value = '';
+        }
+    }
 
     async function loadCoupons() {
-        const res = await fetch('/admin/api/cupons');
-        coupons = await res.json();
-        renderTable();
+        try {
+            const res = await fetch('/admin/api/cupons');
+            couponsList = await res.json();
+            renderTable();
+            loadHistory();
+        } catch (e) { console.error("Erro ao carregar", e); }
+    }
+
+    async function loadHistory() {
+        try {
+            const res = await fetch('/admin/api/cupons/historico');
+            const history = await res.json();
+            const tbody = document.getElementById('historyTable');
+            tbody.innerHTML = '';
+
+            if (history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted small p-3">Nenhum uso registrado.</td></tr>';
+                return;
+            }
+
+            history.forEach(h => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="ps-4"><small>${h.data}</small></td>
+                    <td><span class="badge bg-secondary">${h.cupom}</span></td>
+                    <td>#${h.pedido}</td>
+                    <td class="text-success fw-bold">-R$ ${h.valor.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (e) { console.error(e); }
     }
 
     function renderTable() {
         const tbody = document.getElementById('couponsTable');
         tbody.innerHTML = '';
 
-        for (const [code, data] of Object.entries(coupons)) {
-            const valueDisplay = data.tipo === 'porcentagem' ? `${data.valor}%` : `R$ ${parseFloat(data.valor).toFixed(2)}`;
+        if (couponsList.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted p-3">Nenhum cupom cadastrado.</td></tr>';
+            return;
+        }
+
+        couponsList.forEach(c => {
+            const valueDisplay = c.tipo === 'porcentagem' ? `${c.valor}%` : `R$ ${parseFloat(c.valor).toFixed(2)}`;
+
+            let dateDisplay = '<span class="badge bg-success">Permanente</span>';
+            if (c.inicio || c.fim) {
+                const i = c.inicio ? new Date(c.inicio).toLocaleDateString() : '...';
+                const f = c.fim ? new Date(c.fim).toLocaleDateString() : '...';
+                dateDisplay = `<small>${i} até ${f}</small>`;
+            }
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                    <td><span class="badge bg-primary fs-6">${code}</span></td>
-                    <td><strong>${valueDisplay}</strong> <small class="text-muted">(${data.tipo})</small></td>
-                    <td>${data.desc}</td>
+                    <td><span class="badge bg-primary fs-6">${c.code}</span></td>
+                    <td><strong>${valueDisplay}</strong></td>
+                    <td>${dateDisplay}</td>
+                    <td>${c.desc}</td>
                     <td class="text-end">
-                        <button onclick="deleteCoupon('${code}')" class="btn btn-outline-danger btn-sm">Excluir</button>
+                        <button onclick="deleteCoupon('${c.code}')" class="btn btn-outline-danger btn-sm">Excluir</button>
                     </td>
                 `;
             tbody.appendChild(tr);
-        }
+        });
     }
 
     document.getElementById('addCouponForm').addEventListener('submit', async (e) => {
@@ -105,32 +201,41 @@
         const type = document.getElementById('type').value;
         const value = parseFloat(document.getElementById('value').value);
         const desc = document.getElementById('desc').value;
+        const isPerm = document.getElementById('permanent').checked;
 
-        if (!code || !value) return;
+        const data = {
+            code: code,
+            tipo: type,
+            valor: value,
+            desc: desc,
+            inicio: isPerm ? null : document.getElementById('dateStart').value,
+            fim: isPerm ? null : document.getElementById('dateEnd').value
+        };
 
-        coupons[code] = { valor: value, tipo: type, desc: desc };
-        await saveCoupons();
+        await fetch('/admin/api/cupons/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'save', data: data })
+        });
 
         e.target.reset();
-        renderTable();
+        document.getElementById('permanent').checked = true;
+        toggleDates();
+        loadCoupons();
     });
 
     async function deleteCoupon(code) {
         if (confirm(`Deseja realmente excluir o cupom ${code}?`)) {
-            delete coupons[code];
-            await saveCoupons();
-            renderTable();
+            await fetch('/admin/api/cupons/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', data: { code: code } })
+            });
+            loadCoupons();
         }
     }
 
-    async function saveCoupons() {
-        await fetch('/admin/api/cupons/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(coupons)
-        });
-    }
-
     loadCoupons();
+    toggleDates(); // Init state
 </script>
 {% endblock %}

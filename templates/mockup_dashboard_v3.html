@@ -1,0 +1,99 @@
+{% extends "base_admin_mockup_v3.html" %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="corp-card">
+            <div class="corp-header">
+                <h5>Vendas Hoje</h5>
+                <i class="fas fa-chart-bar text-primary fa-lg"></i>
+            </div>
+            <h2 class="kpi-value text-primary">R$ 1.250,00</h2>
+            <div class="progress mt-3" style="height: 5px;">
+                <div class="progress-bar bg-primary" role="progressbar" style="width: 75%"></div>
+            </div>
+            <small class="text-muted mt-2 d-block">Meta diária: 75% atingida</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="corp-card">
+            <div class="corp-header">
+                <h5>Pedidos</h5>
+                <i class="fas fa-clipboard-list text-secondary fa-lg"></i>
+            </div>
+            <h2 class="kpi-value">12</h2>
+            <div class="d-flex gap-2 mt-3">
+                <span class="badge-corp bg-warning text-dark">3 Pendentes</span>
+                <span class="badge-corp bg-info text-white">2 Preparo</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="corp-card">
+            <div class="corp-header">
+                <h5>Ticket Médio</h5>
+                <i class="fas fa-percentage text-secondary fa-lg"></i>
+            </div>
+            <h2 class="kpi-value">R$ 104,00</h2>
+            <small class="text-success fw-bold"><i class="fas fa-arrow-up"></i> 12% Crescimento</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="corp-card bg-primary text-white border-primary">
+            <div class="corp-header border-white border-opacity-25">
+                <h5 class="text-white">Status Loja</h5>
+                <i class="fas fa-store fa-lg text-white"></i>
+            </div>
+            <h2 class="kpi-value text-white">ABERTA</h2>
+            <small class="text-white opacity-75">Fecha às 23:00</small>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-12">
+        <div class="corp-card">
+            <div class="corp-header">
+                <h5>Últimos Pedidos</h5>
+                <button class="btn btn-sm btn-outline-primary">Ver Todos</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Valor</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>#1055</strong></td>
+                            <td>Maria Silva</td>
+                            <td>R$ 120,00</td>
+                            <td><span class="badge bg-warning text-dark">Pendente</span></td>
+                            <td><button class="btn btn-sm btn-light border">Detalhes</button></td>
+                        </tr>
+                        <tr>
+                            <td><strong>#1054</strong></td>
+                            <td>Carlos A.</td>
+                            <td>R$ 45,00</td>
+                            <td><span class="badge bg-info">Preparo</span></td>
+                            <td><button class="btn btn-sm btn-light border">Detalhes</button></td>
+                        </tr>
+                        <tr>
+                            <td><strong>#1053</strong></td>
+                            <td>Julia R.</td>
+                            <td>R$ 89,90</td>
+                            <td><span class="badge bg-success">Concluído</span></td>
+                            <td><button class="btn btn-sm btn-light border">Detalhes</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

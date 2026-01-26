@@ -29,8 +29,99 @@
     <form method="POST" action="{{ url_for('admin.admin_config') }}" enctype="multipart/form-data">
         <div class="row g-4">
 
+
             <!-- COLUNA ESQUERDA: MÓDULOS E IA -->
             <div class="col-lg-5">
+
+                <!-- Aparência (Novo) -->
+                <div class="card shadow-lg border-0 mb-4 bg-dark-subtle">
+                    <div class="card-header bg-transparent border-secondary py-3">
+                        <h5 class="mb-0 text-white"><i class="fas fa-palette text-warning"></i> Aparência do Painel</h5>
+                    </div>
+                    <div class="card-body bg-dark rounded-bottom p-3">
+                        <div class="row g-2">
+                            <!-- Sidebar -->
+                            <div class="col-4">
+                                <label
+                                    class="card h-100 bg-black border-secondary cursor-pointer layout-option position-relative mb-0">
+                                    <input type="radio" name="admin_layout" value="sidebar" class="d-none" {% if
+                                        config.get('admin_layout', 'sidebar' )=='sidebar' %}checked{% endif %}>
+                                    <img src="{{ url_for('static', filename='img/layouts/sidebar_thumb.svg') }}"
+                                        class="card-img-top p-2" alt="Lateral">
+                                    <div class="card-body p-2 text-center">
+                                        <small class="fw-bold text-secondary"
+                                            style="font-size: 0.75rem;">Lateral</small>
+                                    </div>
+                                    <div class="check-indicator position-absolute top-0 end-0 p-1 text-warning"
+                                        style="display: none;">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Horizontal -->
+                            <div class="col-4">
+                                <label
+                                    class="card h-100 bg-black border-secondary cursor-pointer layout-option position-relative mb-0">
+                                    <input type="radio" name="admin_layout" value="horizontal" class="d-none" {% if
+                                        config.get('admin_layout')=='horizontal' %}checked{% endif %}>
+                                    <img src="{{ url_for('static', filename='img/layouts/horizontal_thumb.svg') }}"
+                                        class="card-img-top p-2" alt="Horizontal">
+                                    <div class="card-body p-2 text-center">
+                                        <small class="fw-bold text-secondary" style="font-size: 0.75rem;">Top
+                                            Bar</small>
+                                    </div>
+                                    <div class="check-indicator position-absolute top-0 end-0 p-1 text-warning"
+                                        style="display: none;">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                </label>
+                            </div>
+                            <!-- Launcher -->
+                            <div class="col-4">
+                                <label
+                                    class="card h-100 bg-black border-secondary cursor-pointer layout-option position-relative mb-0">
+                                    <input type="radio" name="admin_layout" value="launcher" class="d-none" {% if
+                                        config.get('admin_layout')=='launcher' %}checked{% endif %}>
+                                    <img src="{{ url_for('static', filename='img/layouts/launcher_thumb.svg') }}"
+                                        class="card-img-top p-2" alt="Launcher">
+                                    <div class="card-body p-2 text-center">
+                                        <small class="fw-bold text-secondary" style="font-size: 0.75rem;">Grade
+                                            (App)</small>
+                                    </div>
+                                    <div class="check-indicator position-absolute top-0 end-0 p-1 text-warning"
+                                        style="display: none;">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <style>
+                    .layout-option {
+                        transition: all 0.2s;
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                    }
+
+                    .layout-option:hover {
+                        border-color: rgba(255, 255, 255, 0.3);
+                        background: rgba(255, 255, 255, 0.05) !important;
+                    }
+
+                    .layout-option input:checked~.check-indicator {
+                        display: block !important;
+                    }
+
+                    .layout-option input:checked~.card-body small {
+                        color: #ffc107 !important;
+                    }
+
+                    .layout-option:has(input:checked) {
+                        border-color: #ffc107 !important;
+                        background: rgba(255, 193, 7, 0.1) !important;
+                    }
+                </style>
 
                 <!-- Módulos Globais -->
                 <div class="card shadow-lg border-0 mb-4 bg-dark-subtle">

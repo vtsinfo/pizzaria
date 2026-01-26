@@ -1,0 +1,149 @@
+:root {
+    --bg-body: #f0f2f5;
+    --bg-sidebar: #0f172a;
+    /* Slate 900 */
+    --text-sidebar: #94a3b8;
+    /* Slate 400 */
+    --text-sidebar-active: #ffffff;
+    --primary-color: #3b82f6;
+    /* Blue 500 */
+    --bg-header: #ffffff;
+    --card-bg: #ffffff;
+    --text-main: #1e293b;
+    --sidebar-width: 260px;
+    --header-height: 60px;
+}
+
+body {
+    background-color: var(--bg-body);
+    font-family: 'Roboto', sans-serif;
+    color: var(--text-main);
+}
+
+#wrapper {
+    display: flex;
+    width: 100%;
+}
+
+#sidebar-wrapper {
+    width: var(--sidebar-width);
+    background: var(--bg-sidebar);
+    color: var(--text-sidebar);
+    position: fixed;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+#page-content-wrapper {
+    width: 100%;
+    margin-left: var(--sidebar-width);
+    min-height: 100vh;
+}
+
+/* Sidebar Elements */
+.sidebar-heading {
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    color: #fff;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-category {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    padding: 1.5rem 1.5rem 0.5rem;
+    font-weight: 700;
+    color: #475569;
+}
+
+.list-group-item {
+    background: transparent;
+    border: none;
+    color: var(--text-sidebar);
+    padding: 0.8rem 1.5rem;
+    font-size: 0.95rem;
+}
+
+.list-group-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.list-group-item.active {
+    background: var(--primary-color);
+    color: #fff;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.5);
+}
+
+.list-group-item i {
+    width: 24px;
+    margin-right: 8px;
+    opacity: 0.8;
+}
+
+/* Header */
+.top-navbar {
+    height: var(--header-height);
+    background: var(--bg-header);
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    justify-content: space-between;
+}
+
+/* Corporate Cards */
+.corp-card {
+    background: var(--card-bg);
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    /* More square */
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    height: 100%;
+}
+
+.corp-header {
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.corp-header h5 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.kpi-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.kpi-label {
+    color: #64748b;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Badges */
+.badge-corp {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}

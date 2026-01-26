@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup Launcher - Pizzaria Colonial</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin_modern.css') }}" rel="stylesheet">
+    <style>
+        body {
+            background-color: #121212;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Minimal Header -->
+    <div
+        class="d-flex justify-content-between align-items-center px-4 py-3 border-bottom border-secondary mb-4 bg-dark">
+        <h4 class="m-0 text-warning fw-bold"><i class="fas fa-pizza-slice"></i> Colonial <span
+                class="text-muted fw-light fs-6">| Painel de Controle</span></h4>
+        <div class="d-flex gap-3 align-items-center">
+            <span class="text-light">Olá, <strong>{{ session.get('username') }}</strong></span>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-light btn-sm"><i class="fas fa-home"></i>
+                Home</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm"><i class="fas fa-power-off"></i></a>
+        </div>
+    </div>
+
+    <!-- Launcher Content -->
+    <div class="launcher-container">
+        {% if request.endpoint != 'admin_dashboard' %}
+        <div class="mb-3">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-sm btn-outline-secondary"><i
+                    class="fas fa-arrow-left"></i> Voltar ao Menu Principal</a>
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

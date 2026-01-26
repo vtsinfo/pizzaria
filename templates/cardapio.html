@@ -163,7 +163,7 @@
 
                   <!-- Action Buttons -->
                   <div class="mt-3">
-                    {% if site_config.online_ordering_enabled %}
+                    {% if site_config.online_ordering_enabled and config.get(category, {}).get('show_price', True) %}
                     <button class="btn w-100 fw-bold rounded-pill"
                       style="background-color: var(--primary-color); color: #000;"
                       @click="addToCart({id: {{ item.id }}, nome: '{{ item.nome|replace("'", "\\'") }}', priceStr: '{{ item.preco }}'})">
@@ -203,148 +203,165 @@
 
     </div>
 
-    <!-- CART MODAL & FAB -->
+    <!-- CART OFFCANVAS & FAB -->
     {% if site_config.online_ordering_enabled %}
     <div>
       <!-- Floating Button -->
-      <button class="fab-cart" @click="openCart" v-if="cart.length > 0">
+      <button class="fab-cart" @click="openCart" v-show="cart.length > 0">
         <i class="fas fa-shopping-basket"></i>
-        <span class="cart-count">[[ cartCount ]]</span>
+        <span class="cart-count" v-text="cartCount"></span>
       </button>
 
-      <!-- Modal Checkout -->
-      <div class="modal fade modal-dark" id="cartModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title"><i class="fas fa-shopping-basket me-2"></i>Seu Carrinho</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
+      <!-- Offcanvas Checkout (Sliding Sidebar) -->
+      <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="cartOffcanvas"
+        aria-labelledby="cartOffcanvasLabel" style="width: 400px;">
+        <div class="offcanvas-header border-bottom border-secondary">
+          <h5 class="offcanvas-title" id="cartOffcanvasLabel"><i class="fas fa-shopping-basket me-2"></i>Seu Carrinho
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"
+            aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-4">
 
-              <!-- Cart Items -->
-              <div v-if="cart.length === 0" class="text-center py-5">
-                <h4 class="text-muted">Seu carrinho está vazio.</h4>
-              </div>
-              <div v-else>
-                <table class="table table-dark table-striped align-middle">
-                  <tbody>
-                    <tr v-for="(item, idx) in cart" :key="idx">
-                      <td>[[ item.nome ]]</td>
-                      <td><input type="number" class="form-control form-control-sm" style="width: 60px"
-                          v-model.number="item.qtd" min="1"></td>
-                      <td class="text-end">R$ [[ (item.preco * item.qtd).toFixed(2).replace('.', ',') ]]</td>
-                      <td class="text-end"><button class="btn btn-sm btn-outline-danger"
-                          @click="removeFromCart(idx)">&times;</button></td>
-                    </tr>
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <td colspan="2" class="fw-bold fs-5 text-end">Total:</td>
-                      <td colspan="2" class="fw-bold fs-5 text-end" style="color: var(--primary-color);">R$ [[
-                        total.toFixed(2).replace('.',
-                        ',') ]]</td>
-                    </tr>
-                  </tfoot>
-                </table>
-
-                <hr class="border-secondary my-4">
-
-                <!-- Checkout Form -->
-                <form @submit.prevent="submitOrder">
-                  <h5 class="mb-3" style="color: var(--primary-color);">1. Identificação</h5>
-                  <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                      <label class="form-label">Nome Completo</label>
-                      <input type="text" class="form-control" v-model="form.nome" required placeholder="Seu nome">
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Telefone / WhatsApp</label>
-                      <input type="text" class="form-control" v-model="form.telefone" required
-                        placeholder="(11) 99999-9999">
-                    </div>
-                  </div>
-
-                  <h5 class="mb-3" style="color: var(--primary-color);">2. Entrega</h5>
-                  <div class="mb-4">
-                    <div class="btn-group w-100 mb-3" role="group">
-                      <input type="radio" class="btn-check" name="delivery" id="del1" value="Entrega"
-                        v-model="form.tipo_entrega">
-                      <label class="btn btn-outline-light" for="del1"><i
-                          class="fas fa-motorcycle me-2"></i>Entrega</label>
-
-                      <input type="radio" class="btn-check" name="delivery" id="del2" value="Retirada"
-                        v-model="form.tipo_entrega">
-                      <label class="btn btn-outline-light" for="del2"><i class="fas fa-store me-2"></i>Retirada no
-                        Balcão</label>
-                    </div>
-
-                    <div v-if="form.tipo_entrega === 'Entrega'" class="card card-body"
-                      style="background-color: var(--input-bg); border-color: var(--border-color);">
-                      <div class="row g-2">
-                        <div class="col-8">
-                          <input type="text" class="form-control" v-model="form.rua" placeholder="Rua / Avenida"
-                            required>
-                        </div>
-                        <div class="col-4">
-                          <input type="text" class="form-control" v-model="form.numero" placeholder="Nº" required>
-                        </div>
-                        <div class="col-12">
-                          <input type="text" class="form-control" v-model="form.bairro" placeholder="Bairro" required>
-                        </div>
-                        <div class="col-12 mt-2">
-                          <small style="color: var(--primary-color);">Taxa de Entrega: A combinar / Calc. Final</small>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <h5 class="mb-3" style="color: var(--primary-color);">3. Pagamento</h5>
-                  <div class="mb-4">
-                    <div class="form-check mb-2">
-                      <input class="form-check-input" type="radio" name="pay" id="pay1" value="maquina_cartao"
-                        v-model="form.pagamento">
-                      <label class="form-check-label" for="pay1">
-                        💳 Cartão (Vou levar a maquinha)
-                      </label>
-                    </div>
-                    <div class="form-check mb-2">
-                      <input class="form-check-input" type="radio" name="pay" id="pay2" value="maquina_pix"
-                        v-model="form.pagamento">
-                      <label class="form-check-label" for="pay2">
-                        📱 Pix (Levar Maquininha - QR Code)
-                      </label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="pay" id="pay3" value="dinheiro"
-                        v-model="form.pagamento">
-                      <label class="form-check-label" for="pay3">
-                        💵 Dinheiro
-                      </label>
-                    </div>
-
-                    <!-- Troco Input -->
-                    <div v-if="form.pagamento === 'dinheiro'" class="mt-2 ms-4">
-                      <input type="text" class="form-control form-control-sm w-50" v-model="form.troco_para"
-                        placeholder="Troco para (ex: R$ 50,00)">
-                    </div>
-                  </div>
-
-                  <div class="mb-4">
-                    <label class="form-label">Observações do Pedido</label>
-                    <textarea class="form-control" v-model="form.obs" rows="2"
-                      placeholder="Ex: Sem cebola, capricha no orégano..."></textarea>
-                  </div>
-
-                  <div class="d-grid">
-                    <button type="submit" class="btn btn-success btn-lg fw-bold" :disabled="submitting">
-                      <span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
-                      [[ submitting ? 'Enviando...' : 'FINALIZAR PEDIDO' ]]
-                    </button>
-                  </div>
-                </form>
+          <!-- Cart Items -->
+          <div v-if="cart.length === 0" class="text-center py-5">
+            <h4 class="text-muted">Seu carrinho está vazio.</h4>
+            <button class="btn btn-outline-warning mt-3" data-bs-dismiss="offcanvas">Ver Cardápio</button>
+          </div>
+          <div v-else>
+            <!-- Items List -->
+            <div class="mb-4">
+              <div v-for="(item, idx) in cart" :key="idx"
+                class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
+                <div>
+                  <div class="fw-bold">[[ item.nome ]]</div>
+                  <div class="text-warning">R$ [[ (item.preco * item.qtd).toFixed(2).replace('.', ',') ]]</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="number" class="form-control form-control-sm text-center"
+                    style="width: 50px; background: #333; color: white; border: 1px solid #555;"
+                    v-model.number="item.qtd" min="1">
+                  <button class="btn btn-sm btn-outline-danger" @click="removeFromCart(idx)"><i
+                      class="fas fa-trash"></i></button>
+                </div>
               </div>
             </div>
+
+            <!-- Coupon & Totals -->
+            <div class="bg-dark p-3 rounded mb-4" style="background-color: #212529 !important; border: 1px solid #444;">
+              <div class="input-group input-group-sm mb-2">
+                <input type="text" class="form-control text-uppercase" v-model="couponCode" placeholder="CUPOM">
+                <button class="btn btn-warning" @click="applyCoupon" :disabled="!couponCode">Aplicar</button>
+              </div>
+              <div v-if="couponError" class="text-danger small mb-2">[[ couponError ]]</div>
+              <div v-if="discount > 0" class="d-flex justify-content-between text-success small mb-1">
+                <span>Desconto</span>
+                <span>-R$ [[ discount.toFixed(2).replace('.', ',') ]]</span>
+              </div>
+              <div class="d-flex justify-content-between fw-bold fs-5 pt-2 border-top border-secondary">
+                <span>Total</span>
+                <span class="text-warning">R$ [[ (total - discount).toFixed(2).replace('.', ',') ]]</span>
+              </div>
+            </div>
+
+            <hr class="border-secondary my-4">
+
+            <!-- Checkout Form -->
+            <form @submit.prevent="submitOrder">
+              <h5 class="mb-3 text-warning border-bottom border-secondary pb-2">1. Identificação</h5>
+              <div class="mb-3">
+                <label class="form-label text-secondary small">Nome Completo</label>
+                <input type="text" class="form-control bg-dark text-light border-secondary" v-model="form.nome" required
+                  placeholder="Seu nome">
+              </div>
+              <div class="mb-4">
+                <label class="form-label text-secondary small">Telefone / WhatsApp</label>
+                <input type="text" class="form-control bg-dark text-light border-secondary" v-model="form.telefone"
+                  required placeholder="(11) 99999-9999">
+              </div>
+
+              <h5 class="mb-3 text-warning border-bottom border-secondary pb-2">2. Entrega</h5>
+              <div class="mb-4">
+                <div class="btn-group w-100 mb-3" role="group">
+                  <input type="radio" class="btn-check" name="delivery" id="del1" value="Entrega"
+                    v-model="form.tipo_entrega">
+                  <label class="btn btn-outline-light btn-sm" for="del1"><i
+                      class="fas fa-motorcycle me-2"></i>Entrega</label>
+
+                  <input type="radio" class="btn-check" name="delivery" id="del2" value="Retirada"
+                    v-model="form.tipo_entrega">
+                  <label class="btn btn-outline-light btn-sm" for="del2"><i
+                      class="fas fa-store me-2"></i>Retirada</label>
+                </div>
+
+                <div v-if="form.tipo_entrega === 'Entrega'" class="p-3 rounded"
+                  style="background-color: #2c3035; border: 1px solid #444;">
+                  <div class="row g-2">
+                    <div class="col-5">
+                      <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        v-model="form.cep" placeholder="CEP" @blur="checkCep" maxlength="9">
+                    </div>
+                    <div class="col-7 d-flex align-items-center">
+                      <small v-if="cepLoading" class="text-warning">Buscando...</small>
+                    </div>
+                    <div class="col-12">
+                      <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        v-model="form.rua" placeholder="Rua / Avenida" required>
+                    </div>
+                    <div class="col-4">
+                      <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        v-model="form.numero" placeholder="Nº" required>
+                    </div>
+                    <div class="col-8">
+                      <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        v-model="form.bairro" placeholder="Bairro" required>
+                    </div>
+                    <div class="col-12">
+                      <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        v-model="form.complemento" placeholder="Comp. (Ap, Bloco)">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <h5 class="mb-3 text-warning border-bottom border-secondary pb-2">3. Pagamento</h5>
+              <div class="mb-4">
+                <div class="d-flex flex-column gap-2">
+                  <label class="btn btn-outline-secondary btn-sm text-start border-secondary text-light"
+                    :class="{active: form.pagamento === 'maquina_cartao'}">
+                    <input type="radio" name="pay" value="maquina_cartao" v-model="form.pagamento" class="d-none">
+                    💳 Cartão (Levamos maquininha)
+                  </label>
+                  <label class="btn btn-outline-secondary btn-sm text-start border-secondary text-light"
+                    :class="{active: form.pagamento === 'maquina_pix'}">
+                    <input type="radio" name="pay" value="maquina_pix" v-model="form.pagamento" class="d-none">
+                    📱 Pix (QR Code na entrega)
+                  </label>
+                  <label class="btn btn-outline-secondary btn-sm text-start border-secondary text-light"
+                    :class="{active: form.pagamento === 'dinheiro'}">
+                    <input type="radio" name="pay" value="dinheiro" v-model="form.pagamento" class="d-none">
+                    💵 Dinheiro
+                  </label>
+                </div>
+                <div v-if="form.pagamento === 'dinheiro'" class="mt-2">
+                  <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary"
+                    v-model="form.troco_para" placeholder="Vai precisar de troco para quanto?">
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <label class="form-label text-secondary small">Observações</label>
+                <textarea class="form-control bg-dark text-light border-secondary" v-model="form.obs" rows="2"
+                  placeholder="Ex: Sem cebola..."></textarea>
+              </div>
+
+              <div class="d-grid pb-5">
+                <button type="submit" class="btn btn-success btn-lg fw-bold py-3" :disabled="submitting">
+                  <span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
+                  [[ submitting ? 'Enviando...' : 'ENVIAR PEDIDO' ]]
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -374,13 +391,19 @@
           nome: '',
           telefone: '',
           tipo_entrega: 'Entrega',
+          cep: '',
           rua: '',
           numero: '',
           bairro: '',
+          complemento: '',
           pagamento: 'maquina_cartao',
           troco_para: '',
           obs: ''
-        }
+        },
+        cepLoading: false,
+        couponCode: '',
+        discount: 0.0,
+        couponError: ''
       }
     },
     computed: {
@@ -440,9 +463,10 @@
       },
       openCart() {
         if (!this.modalInstance) {
-          this.modalInstance = new bootstrap.Modal(document.getElementById('cartModal'));
+          const el = document.getElementById('cartOffcanvas');
+          if (el) this.modalInstance = new bootstrap.Offcanvas(el);
         }
-        this.modalInstance.show();
+        if (this.modalInstance) this.modalInstance.show();
       },
       async submitOrder() {
         if (this.cart.length === 0) return;
@@ -452,12 +476,15 @@
           cliente: {
             nome: this.form.nome,
             telefone: this.form.telefone,
+            cep: this.form.cep,
             rua: this.form.rua,
             numero: this.form.numero,
+            complemento: this.form.complemento,
             bairro: this.form.bairro
           },
           items: this.cart,
-          total: this.total,
+          total: this.total, // Backend will recalc, but good for reference
+          coupon: this.discount > 0 ? this.couponCode : null,
           tipo_entrega: this.form.tipo_entrega,
           pagamento: {
             metodo: this.form.pagamento,
@@ -497,6 +524,63 @@
           'dinheiro': 'Dinheiro'
         };
         return map[key] || key;
+      },
+      async applyCoupon() {
+        this.couponError = '';
+        this.discount = 0;
+
+        if (!this.couponCode) return;
+
+        try {
+          const res = await fetch('/api/cupom/validar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codigo: this.couponCode })
+          });
+          const data = await res.json();
+
+          if (data.valid) {
+            let descVal = 0;
+            if (data.tipo === 'porcentagem') {
+              descVal = (this.total * data.valor) / 100;
+            } else {
+              descVal = data.valor;
+            }
+            // Limit discount to total
+            if (descVal > this.total) descVal = this.total;
+
+            this.discount = descVal;
+            this.couponError = ''; // Clear error
+          } else {
+            this.couponError = data.message;
+            this.discount = 0;
+          }
+        } catch (e) {
+          this.couponError = 'Erro ao validar cupom.';
+        }
+      },
+      async checkCep() {
+        const cep = this.form.cep.replace(/\D/g, '');
+        if (cep.length !== 8) return;
+
+        this.cepLoading = true;
+        try {
+          const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+          const data = await res.json();
+          if (!data.erro) {
+            this.form.rua = data.logradouro;
+            this.form.bairro = data.bairro;
+            // this.form.cidade = data.localidade; // Se precisar
+            // Foca no número
+            setTimeout(() => { document.querySelector('input[placeholder="Nº"]').focus(); }, 100);
+          } else {
+            alert('CEP não encontrado.');
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          this.cepLoading = false;
+        }
       }
     }
   });

@@ -1,0 +1,104 @@
+{% extends "base_admin_mockup.html" %}
+
+{% block title %}Dashboard Mockup - Pizzaria Colonial{% endblock %}
+{% block header_title %}Visão Geral{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <!-- KPI Cards (New Look) -->
+    <div class="col-md-3">
+        <div class="glass-card stat-card mb-0">
+            <div class="stat-icon"><i class="fas fa-shopping-bag"></i></div>
+            <div class="stat-info">
+                <h3>12</h3>
+                <p>Pedidos Hoje</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card stat-card mb-0">
+            <div class="stat-icon text-success" style="background: rgba(25, 135, 84, 0.1); color: #20c997;"><i
+                    class="fas fa-dollar-sign"></i></div>
+            <div class="stat-info">
+                <h3>R$ 1.250</h3>
+                <p>Faturamento</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card stat-card mb-0">
+            <div class="stat-icon text-info" style="background: rgba(13, 202, 240, 0.1); color: #0dcaf0;"><i
+                    class="fas fa-users"></i></div>
+            <div class="stat-info">
+                <h3>45</h3>
+                <p>Clientes Ativos</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card stat-card mb-0">
+            <div class="stat-icon text-danger" style="background: rgba(220, 53, 69, 0.1); color: #ff6b6b;"><i
+                    class="fas fa-exclamation-triangle"></i></div>
+            <div class="stat-info">
+                <h3>2</h3>
+                <p>Estoque Baixo</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Main Chart Section -->
+    <div class="col-md-8">
+        <div class="glass-card h-100">
+            <div class="glass-header">
+                <h5 class="m-0"><i class="fas fa-chart-line text-warning me-2"></i> Desempenho de Vendas</h5>
+                <select class="form-select form-select-sm w-auto bg-transparent text-light border-secondary">
+                    <option>Últimos 7 dias</option>
+                    <option>Este Mês</option>
+                </select>
+            </div>
+            <div class="glass-body">
+                <div class="d-flex align-items-center justify-content-center"
+                    style="height: 300px; background: rgba(255,255,255,0.02); border-radius: 8px;">
+                    <span class="text-muted">Gráfico demonstrativo (Mockup)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Feed Section -->
+    <div class="col-md-4">
+        <div class="glass-card h-100">
+            <div class="glass-header">
+                <h5 class="m-0"><i class="fas fa-bell text-warning me-2"></i> Atividade Recente</h5>
+            </div>
+            <div class="glass-body p-0">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item border-bottom border-secondary bg-transparent text-light">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1 text-warning">Novo Pedido #1024</h6>
+                            <small class="text-muted">2 min</small>
+                        </div>
+                        <p class="mb-1 small">3x Pizza Calabresa, 1x Coca-Cola</p>
+                    </div>
+                    <div class="list-group-item border-bottom border-secondary bg-transparent text-light">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1 text-success">Entrega Realizada</h6>
+                            <small class="text-muted">15 min</small>
+                        </div>
+                        <p class="mb-1 small">Pedido #1021 entregue com sucesso.</p>
+                    </div>
+                    <div class="list-group-item bg-transparent text-light">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1 text-info">Reserva Confirmada</h6>
+                            <small class="text-muted">1h</small>
+                        </div>
+                        <p class="mb-1 small">João Silva - 4 Pessoas (20:00)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
