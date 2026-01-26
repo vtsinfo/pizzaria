@@ -2,28 +2,28 @@
     "Bebidas": [
         {
             "desc": "Garrafa",
-            "foto": "/static/uploads/bebida_coca_cola_1768845661724.png",
+            "foto": "/static/uploads/coca_cola_2l_1769135764358.png",
             "nome": "Coca-Cola 2L",
             "preco": "R$ 14,00",
             "visivel": true
         },
         {
             "desc": "Garrafa",
-            "foto": "/static/uploads/bebida_guarana_1768845684915.png",
+            "foto": "/static/uploads/guarana_2l_1769135778016.png",
             "nome": "Guaraná 2L",
             "preco": "R$ 12,00",
             "visivel": true
         },
         {
             "desc": "1 Litro (Uva/Pêssego)",
-            "foto": "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?auto=format&fit=crop&w=800&q=80",
+            "foto": "/static/uploads/suco_del_valle_uva_1769135790950.png",
             "nome": "Suco Del Valle",
             "preco": "R$ 10,00",
             "visivel": true
         },
         {
             "desc": "Latas e Long Necks (Consulte marcas)",
-            "foto": "https://images.unsplash.com/photo-1566633806327-68e152aaf26d?auto=format&fit=crop&w=800&q=80",
+            "foto": "/static/uploads/cervejas_variadas_1769135805453.png",
             "nome": "Cervejas Variadas",
             "preco": "R$ 9,00",
             "visivel": true
